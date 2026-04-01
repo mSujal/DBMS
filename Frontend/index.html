@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Horizon — HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- AMBIENT BACKGROUND LAYERS -->
+  <div class="bg-layer bg-layer-1"></div>
+  <div class="bg-layer bg-layer-2"></div>
+  <div class="bg-grain"></div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="16" width="34" height="22" rx="3" fill="rgba(201,168,76,0.12)" stroke="#c9a84c" stroke-width="1.3"/>
+          <path d="M9 16V11a11 11 0 0 1 22 0v5" stroke="#c9a84c" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <rect x="15" y="25" width="10" height="13" rx="1.5" fill="rgba(201,168,76,0.25)"/>
+          <circle cx="20" cy="22" r="2" fill="#c9a84c"/>
+          <line x1="8" y1="22" x2="12" y2="22" stroke="rgba(201,168,76,0.4)" stroke-width="1" stroke-linecap="round"/>
+          <line x1="28" y1="22" x2="32" y2="22" stroke="rgba(201,168,76,0.4)" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">Grand <span>Horizon</span></div>
+      <div class="logo-sep">|</div>
+      <div class="logo-sub">Hotel Management System</div>
+    </div>
+    <div class="header-right">
+      <div class="header-time" id="headerTime"></div>
+      <div class="header-divider"></div>
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        System Online
+      </div>
+      <div class="header-divider"></div>
+      <div class="admin-badge">
+        <span class="admin-icon">👤</span>
+        Admin
+      </div>
+    </div>
+  </header>
+
+  <!-- NAV TABS -->
+  <nav>
+    <div class="nav-inner">
+      <button class="tab active" data-tab="bookings">
+        <span class="tab-icon">🛎</span>
+        <span class="tab-label">Bookings</span>
+      </button>
+      <button class="tab" data-tab="rooms">
+        <span class="tab-icon">🛏</span>
+        <span class="tab-label">Rooms</span>
+      </button>
+      <button class="tab" data-tab="guests">
+        <span class="tab-icon">👤</span>
+        <span class="tab-label">Guests</span>
+      </button>
+      <button class="tab" data-tab="staff">
+        <span class="tab-icon">👔</span>
+        <span class="tab-label">Staff</span>
+      </button>
+      <button class="tab" data-tab="payments">
+        <span class="tab-icon">💳</span>
+        <span class="tab-label">Payments</span>
+      </button>
+      <button class="tab" data-tab="services">
+        <span class="tab-icon">✨</span>
+        <span class="tab-label">Services</span>
+      </button>
+    </div>
+    <div class="nav-underline" id="navUnderline"></div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main>
+
+    <!-- ── BOOKINGS ── -->
+    <div class="section-panel active" id="tab-bookings">
+      <div class="form-card">
+        <div class="form-header">
+          <div class="form-icon">🛎</div>
+          <div>
+            <div class="form-title">New Reservation</div>
+            <div class="form-subtitle">Create a reservation record for an incoming guest</div>
+          </div>
+          <div class="form-header-meta">
+            <div class="booking-id-badge">BK-<span id="autoId">20251</span></div>
+          </div>
+        </div>
+
+        <form id="bookingForm" novalidate>
+          <div class="form-grid">
+
+            <div class="section-divider"><span>Guest Details</span></div>
+
+            <div class="form-group">
+              <label for="guestId">Guest ID</label>
+              <div class="input-wrap">
+                <span class="input-icon">🪪</span>
+                <input type="text" id="guestId" placeholder="e.g. G-10042">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="guestName">Full Name <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">✦</span>
+                <input type="text" id="guestName" placeholder="John Doe" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone Number</label>
+              <div class="input-wrap">
+                <span class="input-icon">📞</span>
+                <input type="tel" id="phone" placeholder="+977 98XXXXXXXX">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <div class="input-wrap">
+                <span class="input-icon">✉</span>
+                <input type="email" id="email" placeholder="guest@email.com">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="passport">ID / Passport No.</label>
+              <div class="input-wrap">
+                <span class="input-icon">🛂</span>
+                <input type="text" id="passport" placeholder="Passport or National ID">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="nationality">Nationality</label>
+              <div class="input-wrap">
+                <span class="input-icon">🌐</span>
+                <input type="text" id="nationality" placeholder="e.g. Nepali">
+              </div>
+            </div>
+
+            <div class="section-divider"><span>Room &amp; Stay</span></div>
+
+            <div class="form-group">
+              <label for="roomNumber">Room Number <sup>*</sup></label>
+              <div class="input-wrap select-wrap">
+                <select id="roomNumber" required>
+                  <option value="" disabled selected>Select a room</option>
+                  <option value="101">101 — Deluxe Single</option>
+                  <option value="102">102 — Deluxe Double</option>
+                  <option value="201">201 — Junior Suite</option>
+                  <option value="202">202 — Junior Suite</option>
+                  <option value="301">301 — Executive Suite</option>
+                  <option value="401">401 — Presidential Suite</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="roomType">Room Type</label>
+              <div class="input-wrap select-wrap">
+                <select id="roomType">
+                  <option value="" disabled selected>Select type</option>
+                  <option>Single</option>
+                  <option>Double</option>
+                  <option>Junior Suite</option>
+                  <option>Executive Suite</option>
+                  <option>Presidential Suite</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+            </div>
+
+            <div class="form-group full">
+              <label>Stay Dates</label>
+              <div class="date-row">
+                <div class="date-field">
+                  <span class="date-label">Check-in</span>
+                  <input type="date" id="checkIn">
+                </div>
+                <div class="date-arrow">→</div>
+                <div class="date-field">
+                  <span class="date-label">Check-out</span>
+                  <input type="date" id="checkOut">
+                </div>
+                <div class="nights-badge" id="nightsBadge">1 night</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="adults">Adults</label>
+              <div class="input-wrap counter-wrap">
+                <button type="button" class="counter-btn" data-target="adults" data-op="-">−</button>
+                <input type="number" id="adults" min="1" max="10" value="1" readonly>
+                <button type="button" class="counter-btn" data-target="adults" data-op="+">+</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="children">Children</label>
+              <div class="input-wrap counter-wrap">
+                <button type="button" class="counter-btn" data-target="children" data-op="-">−</button>
+                <input type="number" id="children" min="0" max="10" value="0" readonly>
+                <button type="button" class="counter-btn" data-target="children" data-op="+">+</button>
+              </div>
+            </div>
+
+            <div class="section-divider"><span>Billing &amp; Services</span></div>
+
+            <div class="form-group">
+              <label for="ratePerNight">Rate per Night (NPR)</label>
+              <div class="input-wrap">
+                <span class="input-icon">₨</span>
+                <input type="number" id="ratePerNight" placeholder="e.g. 5000">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Estimated Total</label>
+              <div class="total-display" id="totalDisplay">—</div>
+            </div>
+            <div class="form-group">
+              <label for="paymentMethod">Payment Method</label>
+              <div class="input-wrap select-wrap">
+                <select id="paymentMethod">
+                  <option value="" disabled selected>Select method</option>
+                  <option>Cash</option>
+                  <option>Credit Card</option>
+                  <option>Debit Card</option>
+                  <option>Bank Transfer</option>
+                  <option>eSewa</option>
+                  <option>Khalti</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="bookingStatus">Booking Status</label>
+              <div class="input-wrap select-wrap">
+                <select id="bookingStatus">
+                  <option>Confirmed</option>
+                  <option>Pending</option>
+                  <option>Tentative</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="assignedStaff">Assigned Staff</label>
+              <div class="input-wrap select-wrap">
+                <select id="assignedStaff">
+                  <option value="" disabled selected>Assign staff</option>
+                  <option>Priya Sharma</option>
+                  <option>Rajan Thapa</option>
+                  <option>Sita Gurung</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+            </div>
+            <div class="form-group full">
+              <label for="specialRequests">Special Requests</label>
+              <textarea id="specialRequests" placeholder="Dietary needs, preferences, accessibility requirements..."></textarea>
+            </div>
+
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" id="clearBtn">Clear Form</button>
+            <button type="submit" class="btn btn-primary">
+              <span class="btn-icon">✦</span> Confirm Booking
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── ROOMS ── -->
+    <div class="section-panel" id="tab-rooms">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon">🏨</div>
+          <div class="stat-label">Total Rooms</div>
+          <div class="stat-value">48</div>
+          <div class="stat-sub">across 4 floors</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-label">Available</div>
+          <div class="stat-value" style="color:var(--success)">31</div>
+          <div class="stat-sub">ready for booking</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔑</div>
+          <div class="stat-label">Occupied</div>
+          <div class="stat-value" style="color:var(--gold)">14</div>
+          <div class="stat-sub">currently checked in</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔧</div>
+          <div class="stat-label">Maintenance</div>
+          <div class="stat-value" style="color:var(--error)">3</div>
+          <div class="stat-sub">under service</div>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Room Inventory</div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search rooms..." class="table-search">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Room No.</th><th>Type</th><th>Floor</th><th>Rate / Night</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>101</td><td>Deluxe Single</td><td>1</td><td>NPR 4,500</td><td><span class="badge badge-green">Available</span></td><td><button class="action-btn">Book</button></td></tr>
+              <tr><td>102</td><td>Deluxe Double</td><td>1</td><td>NPR 6,000</td><td><span class="badge badge-gold">Occupied</span></td><td><button class="action-btn">View</button></td></tr>
+              <tr><td>201</td><td>Junior Suite</td><td>2</td><td>NPR 9,500</td><td><span class="badge badge-green">Available</span></td><td><button class="action-btn">Book</button></td></tr>
+              <tr><td>202</td><td>Junior Suite</td><td>2</td><td>NPR 9,500</td><td><span class="badge badge-red">Maintenance</span></td><td><button class="action-btn">View</button></td></tr>
+              <tr><td>301</td><td>Executive Suite</td><td>3</td><td>NPR 15,000</td><td><span class="badge badge-gold">Occupied</span></td><td><button class="action-btn">View</button></td></tr>
+              <tr><td>401</td><td>Presidential Suite</td><td>4</td><td>NPR 35,000</td><td><span class="badge badge-green">Available</span></td><td><button class="action-btn">Book</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GUESTS ── -->
+    <div class="section-panel" id="tab-guests">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Guest Directory</div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search guests..." class="table-search">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Guest ID</th><th>Name</th><th>Phone</th><th>Nationality</th><th>Total Stays</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>G-10041</td><td>Arjun Maharjan</td><td>+977 9841000001</td><td>🇳🇵 Nepali</td><td><span class="stay-count">3</span></td><td><button class="action-btn">Profile</button></td></tr>
+              <tr><td>G-10042</td><td>Sarah Johnson</td><td>+1 555 0192</td><td>🇺🇸 American</td><td><span class="stay-count">1</span></td><td><button class="action-btn">Profile</button></td></tr>
+              <tr><td>G-10043</td><td>Rahul Mehta</td><td>+91 98765 43210</td><td>🇮🇳 Indian</td><td><span class="stay-count">2</span></td><td><button class="action-btn">Profile</button></td></tr>
+              <tr><td>G-10044</td><td>Li Wei</td><td>+86 138 0000 1234</td><td>🇨🇳 Chinese</td><td><span class="stay-count">1</span></td><td><button class="action-btn">Profile</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STAFF ── -->
+    <div class="section-panel" id="tab-staff">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Staff Directory</div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search staff..." class="table-search">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Staff ID</th><th>Name</th><th>Role</th><th>Department</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>S-001</td><td>Priya Sharma</td><td>Receptionist</td><td>Front Desk</td><td><span class="badge badge-green">On Duty</span></td><td><button class="action-btn">View</button></td></tr>
+              <tr><td>S-002</td><td>Rajan Thapa</td><td>Receptionist</td><td>Front Desk</td><td><span class="badge badge-gold">On Leave</span></td><td><button class="action-btn">View</button></td></tr>
+              <tr><td>S-003</td><td>Sita Gurung</td><td>Housekeeping</td><td>Housekeeping</td><td><span class="badge badge-green">On Duty</span></td><td><button class="action-btn">View</button></td></tr>
+              <tr><td>S-004</td><td>Bikash Rai</td><td>Chef</td><td>Kitchen</td><td><span class="badge badge-green">On Duty</span></td><td><button class="action-btn">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAYMENTS ── -->
+    <div class="section-panel" id="tab-payments">
+      <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">Today's Revenue</div>
+          <div class="stat-value">NPR 84K</div>
+          <div class="stat-sub trend-up">↑ 12% vs yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-label">Pending Payments</div>
+          <div class="stat-value" style="color:var(--error)">3</div>
+          <div class="stat-sub">invoices outstanding</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📈</div>
+          <div class="stat-label">Monthly Revenue</div>
+          <div class="stat-value">NPR 2.1M</div>
+          <div class="stat-sub trend-up">↑ 8% this month</div>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Payment Records</div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search payments..." class="table-search">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Invoice ID</th><th>Guest</th><th>Room</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td class="invoice-id">#INV-2041</td><td>Arjun Maharjan</td><td>101</td><td class="amount">NPR 13,500</td><td>Cash</td><td><span class="badge badge-green">Paid</span></td></tr>
+              <tr><td class="invoice-id">#INV-2042</td><td>Sarah Johnson</td><td>301</td><td class="amount">NPR 45,000</td><td>Credit Card</td><td><span class="badge badge-green">Paid</span></td></tr>
+              <tr><td class="invoice-id">#INV-2043</td><td>Rahul Mehta</td><td>202</td><td class="amount">NPR 19,000</td><td>eSewa</td><td><span class="badge badge-red">Pending</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SERVICES ── -->
+    <div class="section-panel" id="tab-services">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Hotel Services</div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search services..." class="table-search">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Service ID</th><th>Service Name</th><th>Category</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>SV-01</td><td>Room Service</td><td><span class="category-tag">Food &amp; Beverage</span></td><td>As per menu</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn">Manage</button></td></tr>
+              <tr><td>SV-02</td><td>Spa &amp; Wellness</td><td><span class="category-tag">Wellness</span></td><td>NPR 2,500/hr</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn">Manage</button></td></tr>
+              <tr><td>SV-03</td><td>Airport Transfer</td><td><span class="category-tag">Transport</span></td><td>NPR 1,500</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn">Manage</button></td></tr>
+              <tr><td>SV-04</td><td>Laundry</td><td><span class="category-tag">Housekeeping</span></td><td>NPR 200/item</td><td><span class="badge badge-gold">Limited</span></td><td><button class="action-btn">Manage</button></td></tr>
+              <tr><td>SV-05</td><td>Conference Hall</td><td><span class="category-tag">Events</span></td><td>NPR 15,000/day</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn">Manage</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast">
+    <div class="toast-icon" id="toastIcon">✦</div>
+    <div>
+      <div class="toast-title" id="toastTitle">Success</div>
+      <div class="toast-msg" id="toastMsg">Booking confirmed.</div>
+    </div>
+    <button class="toast-close" id="toastClose">✕</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
