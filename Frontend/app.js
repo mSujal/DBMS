@@ -1,28 +1,62 @@
 "use strict";
 
 /* ═══════════════════════════════════════════
-   STATE  (in-memory, survives tab switching)
+   API BASE URL  ← change port if needed
+═══════════════════════════════════════════ */
+const API_BASE = 'http://localhost:5000';
+
+/* ═══════════════════════════════════════════
+   STATE  (mirrors DB, kept in sync via API)
 ═══════════════════════════════════════════ */
 const DB = {
   bookings: [],
-  rooms: [],
-  guests: [],
-  staff: [],
+  rooms:    [],
+  guests:   [],
+  staff:    [],
   payments: [],
   services: []
 };
 
-let counters = { bookings:20251, rooms:1001, guests:10041, staff:1, payments:2041, services:1 };
+/* ID counters — used only for the auto-ID badge display;
+   real IDs come from the backend after first load         */
+let counters = {
+  bookings: 20251,
+  rooms:    1001,
+  guests:   10041,
+  staff:    1,
+  payments: 2041,
+  services: 1
+};
+
+/* ═══════════════════════════════════════════
+   GENERIC API HELPER
+═══════════════════════════════════════════ */
+async function api(method, path, body) {
+  try {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res  = await fetch(API_BASE + path, opts);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  } catch (err) {
+    showToast('API Error', err.message, 'error');
+    throw err;
+  }
+}
 
 /* ═══════════════════════════════════════════
    NAV
 ═══════════════════════════════════════════ */
-const tabs = document.querySelectorAll('.tab');
-const panels = document.querySelectorAll('.section-panel');
+const tabs       = document.querySelectorAll('.tab');
+const panels     = document.querySelectorAll('.section-panel');
 const navUnderline = document.getElementById('navUnderline');
 
 function activateTab(tabEl) {
-  tabs.forEach(t => t.classList.remove('active'));
+  tabs.forEach(t   => t.classList.remove('active'));
   panels.forEach(p => p.classList.remove('active'));
   tabEl.classList.add('active');
   const panel = document.getElementById('tab-' + tabEl.dataset.tab);
@@ -40,8 +74,8 @@ function moveUnderline(tabEl) {
 }
 
 tabs.forEach(t => t.addEventListener('click', () => activateTab(t)));
-window.addEventListener('load', () => { const a = document.querySelector('.tab.active'); if(a) moveUnderline(a); });
-window.addEventListener('resize', () => { const a = document.querySelector('.tab.active'); if(a) moveUnderline(a); });
+window.addEventListener('load',   () => { const a = document.querySelector('.tab.active'); if (a) moveUnderline(a); });
+window.addEventListener('resize', () => { const a = document.querySelector('.tab.active'); if (a) moveUnderline(a); });
 
 /* ═══════════════════════════════════════════
    CLOCK
@@ -50,85 +84,54 @@ function updateClock() {
   const el = document.getElementById('headerTime');
   if (!el) return;
   el.textContent = new Date().toLocaleString('en-US', {
-    weekday:'short', month:'short', day:'numeric',
-    hour:'2-digit', minute:'2-digit', hour12:true
+    weekday: 'short', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true
   });
 }
-updateClock(); setInterval(updateClock, 30000);
+updateClock();
+setInterval(updateClock, 30000);
 
 /* ═══════════════════════════════════════════
    TOAST
 ═══════════════════════════════════════════ */
 let toastTimer = null;
-function showToast(title, msg, type='success') {
+function showToast(title, msg, type = 'success') {
   const t = document.getElementById('toast');
   document.getElementById('toastTitle').textContent = title;
-  document.getElementById('toastMsg').textContent = msg;
-  document.getElementById('toastIcon').textContent = type==='error' ? '⚠' : '✦';
-  t.classList.toggle('error', type==='error');
+  document.getElementById('toastMsg').textContent   = msg;
+  document.getElementById('toastIcon').textContent  = type === 'error' ? '⚠' : '✦';
+  t.classList.toggle('error', type === 'error');
   t.classList.add('show');
-  if(toastTimer) clearTimeout(toastTimer);
+  if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
 }
-document.getElementById('toastClose').addEventListener('click', () => document.getElementById('toast').classList.remove('show'));
+document.getElementById('toastClose').addEventListener('click', () =>
+  document.getElementById('toast').classList.remove('show')
+);
 
 /* ═══════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════ */
-function toDate(d) { return d || '—'; }
 function fmtNPR(n) { return n ? 'NPR ' + Number(n).toLocaleString('en-NP') : '—'; }
+
 function badgeStatus(s) {
   const map = {
-    'Available':'badge-green','Active':'badge-green','On Duty':'badge-green','Completed':'badge-green','Confirmed':'badge-green','Checked-In':'badge-blue',
-    'Occupied':'badge-gold','On Leave':'badge-gold','Pending':'badge-gold','Limited':'badge-gold','Checked-Out':'badge-gold',
-    'Under Maintenance':'badge-red','Maintenance':'badge-red','Cancelled':'badge-red','Inactive':'badge-red','Refunded':'badge-red'
+    'Available':        'badge-green', 'Active':    'badge-green', 'On Duty':   'badge-green',
+    'Completed':        'badge-green', 'Confirmed': 'badge-green', 'Checked-In':'badge-blue',
+    'Occupied':         'badge-gold',  'On Leave':  'badge-gold',  'Pending':   'badge-gold',
+    'Limited':          'badge-gold',  'Checked-Out':'badge-gold',
+    'Under Maintenance':'badge-red',   'Maintenance':'badge-red',  'Cancelled': 'badge-red',
+    'Inactive':         'badge-red',   'Refunded':  'badge-red'
   };
-  const cls = map[s] || 'badge-gold';
-  return `<span class="badge ${cls}">${s}</span>`;
+  return `<span class="badge ${map[s] || 'badge-gold'}">${s}</span>`;
 }
 
-function clearForm(formId, ...fieldIds) {
-  fieldIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (el.tagName === 'SELECT') el.selectedIndex = 0;
-    else el.value = '';
-  });
-}
-
-function removeRow(tableKey, id, renderFn) {
-  DB[tableKey] = DB[tableKey].filter(r => r.id !== id);
-  renderFn();
-  updateExplorerIfOpen();
-}
-
-function updateExplorerIfOpen() {
-  if (document.getElementById('tab-explorer').classList.contains('active')) renderExplorer();
-}
-
-/* ═══════════════════════════════════════════
-   TABLE SEARCH
-═══════════════════════════════════════════ */
-document.querySelectorAll('.table-search').forEach(inp => {
-  inp.addEventListener('input', function() {
-    const q = this.value.toLowerCase();
-    const tableId = this.dataset.table;
-    const tbody = document.getElementById(tableId)?.querySelector('tbody');
-    if (!tbody) return;
-    tbody.querySelectorAll('tr:not(.empty-row)').forEach(row => {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-  });
-});
-
-/* ═══════════════════════════════════════════
-   DEFAULT DATES
-═══════════════════════════════════════════ */
 function toDateStr(d) { return d.toISOString().split('T')[0]; }
-const today = toDateStr(new Date());
-const tomorrow = toDateStr(new Date(Date.now()+86400000));
-['bk_checkin','py_date','sf_hiredate'].forEach(id => {
-  const el = document.getElementById(id); if(el) el.value = today;
+const today    = toDateStr(new Date());
+const tomorrow = toDateStr(new Date(Date.now() + 86400000));
+
+['bk_checkin', 'py_date', 'sf_hiredate'].forEach(id => {
+  const el = document.getElementById(id); if (el) el.value = today;
 });
 const cko = document.getElementById('bk_checkout');
 if (cko) cko.value = tomorrow;
@@ -142,52 +145,127 @@ function refreshAutoId() {
 }
 refreshAutoId();
 
-/* ══════════════════════════════════════════════
+/* ═══════════════════════════════════════════
+   TABLE SEARCH
+═══════════════════════════════════════════ */
+document.querySelectorAll('.table-search').forEach(inp => {
+  inp.addEventListener('input', function () {
+    const q     = this.value.toLowerCase();
+    const tbody = document.getElementById(this.dataset.table)?.querySelector('tbody');
+    if (!tbody) return;
+    tbody.querySelectorAll('tr:not(.empty-row)').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+});
+
+function updateExplorerIfOpen() {
+  if (document.getElementById('tab-explorer').classList.contains('active')) renderExplorer();
+}
+
+/* ══════════════════════════════════════════════════════════════
    BOOKINGS
-══════════════════════════════════════════════ */
-document.getElementById('bookingForm').addEventListener('submit', function(e) {
+   Flow: Guest must exist first (GuestID required by DB FK).
+   We use the numeric part of the frontend guest ID to link them.
+══════════════════════════════════════════════════════════════ */
+document.getElementById('bookingForm').addEventListener('submit', async function (e) {
   e.preventDefault();
-  const name = document.getElementById('bk_guestName').value.trim();
-  const room = document.getElementById('bk_room').value;
-  const cin  = document.getElementById('bk_checkin').value;
-  const cout = document.getElementById('bk_checkout').value;
-  if (!name) { showToast('Validation Error','Please enter the guest name.','error'); return; }
-  if (!room)  { showToast('Validation Error','Please select a room.','error'); return; }
-  if (!cin || !cout) { showToast('Validation Error','Please set check-in and check-out dates.','error'); return; }
-  if (cout <= cin) { showToast('Validation Error','Check-out must be after check-in.','error'); return; }
 
-  const nights = Math.round((new Date(cout)-new Date(cin))/86400000);
-  const rate = parseFloat(document.getElementById('bk_rate').value)||0;
-  const total = rate > 0 ? rate*nights : 0;
+  const name  = document.getElementById('bk_guestName').value.trim();
+  const room  = document.getElementById('bk_room').value.trim();
+  const cin   = document.getElementById('bk_checkin').value;
+  const cout  = document.getElementById('bk_checkout').value;
 
-  const rec = {
-    id: 'BK-'+counters.bookings++,
-    guest: name,
-    phone: document.getElementById('bk_phone').value,
-    email: document.getElementById('bk_email').value,
-    room,
-    guests: document.getElementById('bk_numguests').value,
-    checkin: cin, checkout: cout,
-    nights, rate, total,
-    status: document.getElementById('bk_status').value,
-    payMethod: document.getElementById('bk_paymethod').value,
-    payStatus: document.getElementById('bk_paystatus').value
-  };
-  DB.bookings.unshift(rec);
-  renderBookings();
-  this.reset();
-  document.getElementById('bk_checkin').value = today;
-  document.getElementById('bk_checkout').value = tomorrow;
+  if (!name)          { showToast('Validation Error', 'Please enter the guest name.', 'error'); return; }
+  if (!room)          { showToast('Validation Error', 'Please select a room.', 'error'); return; }
+  if (!cin || !cout)  { showToast('Validation Error', 'Please set check-in and check-out dates.', 'error'); return; }
+  if (cout <= cin)    { showToast('Validation Error', 'Check-out must be after check-in.', 'error'); return; }
+
+  const nights = Math.round((new Date(cout) - new Date(cin)) / 86400000);
+  const rate   = parseFloat(document.getElementById('bk_rate').value) || 0;
+  const total  = rate > 0 ? rate * nights : 0;
+
+  // Try to find matching guest in local DB (matched by name)
+  const matchedGuest = DB.guests.find(g => g.name.toLowerCase() === name.toLowerCase());
+  if (!matchedGuest) {
+    showToast('Guest Not Found', `Please register "${name}" in the Guests tab first.`, 'error');
+    return;
+  }
+
+  // Try to find matching room in local DB
+  const matchedRoom = DB.rooms.find(r => r.number === room || r.id === room);
+  if (!matchedRoom) {
+    showToast('Room Not Found', `Please add room "${room}" in the Rooms tab first.`, 'error');
+    return;
+  }
+
+  const bookingID = counters.bookings++;
   refreshAutoId();
-  showToast('Booking Confirmed ✦', `${name} · ${room} · ${nights} night${nights!==1?'s':''}`);
-  updateExplorerIfOpen();
+
+  try {
+    // 1. Create booking
+    await api('POST', '/bookings', {
+      BookingID:      bookingID,
+      Booking_Date:   cin,
+      Number_of_Guest: parseInt(document.getElementById('bk_numguests').value) || 1,
+      Total_Amount:   total,
+      Booking_Status: document.getElementById('bk_status').value,
+      GuestID:        matchedGuest.dbId
+    });
+
+    // 2. Assign room to booking
+    await api('POST', '/booking-rooms', {
+      BookingID:      bookingID,
+      RoomID:         matchedRoom.dbId,
+      Check_in_Date:  cin,
+      Check_out_Date: cout,
+      Room_Price:     rate
+    });
+
+    showToast('Booking Confirmed ✦', `${name} · Room ${room} · ${nights} night${nights !== 1 ? 's' : ''}`);
+    this.reset();
+    document.getElementById('bk_checkin').value  = today;
+    document.getElementById('bk_checkout').value = tomorrow;
+    await loadBookings();
+  } catch (_) { /* error already shown by api() */ }
 });
 
 document.getElementById('clearBookingBtn').addEventListener('click', () => {
   document.getElementById('bookingForm').reset();
-  document.getElementById('bk_checkin').value = today;
+  document.getElementById('bk_checkin').value  = today;
   document.getElementById('bk_checkout').value = tomorrow;
 });
+
+async function loadBookings() {
+  try {
+    const data = await api('GET', '/bookings');
+    DB.bookings = data.map(b => ({
+      id:        'BK-' + b.BookingID,
+      dbId:      b.BookingID,
+      guest:     (b.First_Name || '') + ' ' + (b.Last_Name || ''),
+      room:      b.RoomID     ? String(b.RoomID) : '—',
+      checkin:   b.Check_in_Date  || b.Booking_Date || '—',
+      checkout:  b.Check_out_Date || '—',
+      nights:    b.Check_in_Date && b.Check_out_Date
+                   ? Math.round((new Date(b.Check_out_Date) - new Date(b.Check_in_Date)) / 86400000)
+                   : '—',
+      total:     b.Total_Amount   || 0,
+      status:    b.Booking_Status || '—',
+      payMethod: b.Payment_Method || '—',
+      payStatus: b.Payment_Status || '—'
+    }));
+    renderBookings();
+  } catch (_) {}
+}
+
+async function removeBooking(dbId) {
+  try {
+    await api('DELETE', `/bookings/${dbId}`);
+    await loadBookings();
+    updateExplorerIfOpen();
+    showToast('Booking Removed', `Booking #${dbId} deleted.`);
+  } catch (_) {}
+}
 
 function renderBookings() {
   const tbody = document.getElementById('bookingsTbody');
@@ -206,51 +284,74 @@ function renderBookings() {
         <td style="font-weight:500">${r.total > 0 ? fmtNPR(r.total) : '—'}</td>
         <td>${badgeStatus(r.status)}</td>
         <td>${badgeStatus(r.payStatus)}</td>
-        <td><button class="action-btn danger" onclick="removeRow('bookings','${r.id}',renderBookings)">✕ Remove</button></td>
+        <td><button class="action-btn danger" onclick="removeBooking(${r.dbId})">✕ Remove</button></td>
       </tr>`).join('');
   }
 
-  // Stats
-  const stats = document.getElementById('bookingStats');
-  const confirmed = DB.bookings.filter(b=>b.status==='Confirmed'||b.status==='Checked-In').length;
-  const checkedIn = DB.bookings.filter(b=>b.status==='Checked-In').length;
-  const totalRev  = DB.bookings.reduce((s,b)=>s+(b.total||0),0);
-  stats.innerHTML = `
+  const stats      = document.getElementById('bookingStats');
+  const confirmed  = DB.bookings.filter(b => b.status === 'Confirmed' || b.status === 'Checked-In').length;
+  const checkedIn  = DB.bookings.filter(b => b.status === 'Checked-In').length;
+  const totalRev   = DB.bookings.reduce((s, b) => s + (b.total || 0), 0);
+  stats.innerHTML  = `
     <div class="stat-card"><div class="stat-icon">🛎</div><div class="stat-label">Total Bookings</div><div class="stat-value">${DB.bookings.length}</div><div class="stat-sub">all time</div></div>
     <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Confirmed</div><div class="stat-value" style="color:var(--success)">${confirmed}</div><div class="stat-sub">active reservations</div></div>
     <div class="stat-card"><div class="stat-icon">🔑</div><div class="stat-label">Checked-In</div><div class="stat-value" style="color:#7ab4e2">${checkedIn}</div><div class="stat-sub">guests in-house</div></div>
-    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value">${totalRev>0?'NPR '+totalRev.toLocaleString('en-NP'):'—'}</div><div class="stat-sub">from bookings</div></div>`;
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value">${totalRev > 0 ? 'NPR ' + totalRev.toLocaleString('en-NP') : '—'}</div><div class="stat-sub">from bookings</div></div>`;
 }
-renderBookings();
 
 /* ══════════════════════════════════════════════
    ROOMS
 ══════════════════════════════════════════════ */
-document.getElementById('roomForm').addEventListener('submit', function(e) {
+document.getElementById('roomForm').addEventListener('submit', async function (e) {
   e.preventDefault();
-  const num  = document.getElementById('rm_number').value.trim();
-  const type = document.getElementById('rm_type').value;
+  const num   = document.getElementById('rm_number').value.trim();
+  const type  = document.getElementById('rm_type').value;
   const price = document.getElementById('rm_price').value;
-  if (!num)  { showToast('Validation Error','Please enter a room number.','error'); return; }
-  if (!type) { showToast('Validation Error','Please select a room type.','error'); return; }
 
-  const rec = {
-    id: 'RM-' + counters.rooms++,
-    number: num,
-    type,
-    floor: document.getElementById('rm_floor').value || '—',
-    price: price ? Number(price) : 0,
-    status: document.getElementById('rm_status').value,
-    desc: document.getElementById('rm_desc').value
-  };
-  DB.rooms.unshift(rec);
-  renderRooms();
-  this.reset();
-  showToast('Room Added ✦', `Room ${num} — ${type} added to inventory.`);
-  updateExplorerIfOpen();
+  if (!num)  { showToast('Validation Error', 'Please enter a room number.', 'error'); return; }
+  if (!type) { showToast('Validation Error', 'Please select a room type.', 'error'); return; }
+
+  const roomID = counters.rooms++;
+  try {
+    await api('POST', '/rooms', {
+      RoomID:      roomID,
+      Room_Type:   type,
+      Floor:       document.getElementById('rm_floor').value || '1',
+      Base_Price:  price ? Number(price) : 0,
+      Room_Status: document.getElementById('rm_status').value
+    });
+    showToast('Room Added ✦', `Room ${num} — ${type} added to inventory.`);
+    this.reset();
+    await loadRooms();
+  } catch (_) {}
 });
 
 document.getElementById('clearRoomBtn').addEventListener('click', () => document.getElementById('roomForm').reset());
+
+async function loadRooms() {
+  try {
+    const data = await api('GET', '/rooms');
+    DB.rooms = data.map(r => ({
+      id:     'RM-' + r.RoomID,
+      dbId:   r.RoomID,
+      number: String(r.RoomID),           // room number = RoomID from DB
+      type:   r.Room_Type  || '—',
+      floor:  r.Floor      || '—',
+      price:  r.Base_Price || 0,
+      status: r.Room_Status || '—'
+    }));
+    renderRooms();
+  } catch (_) {}
+}
+
+async function removeRoom(dbId) {
+  try {
+    await api('DELETE', `/rooms/${dbId}`);
+    await loadRooms();
+    updateExplorerIfOpen();
+    showToast('Room Removed', `Room #${dbId} deleted.`);
+  } catch (_) {}
+}
 
 function renderRooms() {
   const tbody = document.getElementById('roomsTbody');
@@ -266,49 +367,77 @@ function renderRooms() {
         <td>${r.floor}</td>
         <td>${r.price > 0 ? fmtNPR(r.price) : '—'}</td>
         <td>${badgeStatus(r.status)}</td>
-        <td><button class="action-btn danger" onclick="removeRow('rooms','${r.id}',renderRooms)">✕ Remove</button></td>
+        <td><button class="action-btn danger" onclick="removeRoom(${r.dbId})">✕ Remove</button></td>
       </tr>`).join('');
   }
 
   const stats = document.getElementById('roomStats');
-  const avail = DB.rooms.filter(r=>r.status==='Available').length;
-  const occ   = DB.rooms.filter(r=>r.status==='Occupied').length;
-  const maint = DB.rooms.filter(r=>r.status==='Under Maintenance').length;
+  const avail = DB.rooms.filter(r => r.status === 'Available').length;
+  const occ   = DB.rooms.filter(r => r.status === 'Occupied').length;
+  const maint = DB.rooms.filter(r => r.status === 'Under Maintenance').length;
   stats.innerHTML = `
     <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Available</div><div class="stat-value" style="color:var(--success)">${avail}</div><div class="stat-sub">ready for guests</div></div>
     <div class="stat-card"><div class="stat-icon">🔑</div><div class="stat-label">Occupied</div><div class="stat-value" style="color:var(--gold)">${occ}</div><div class="stat-sub">currently in-use</div></div>
     <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-label">Maintenance</div><div class="stat-value" style="color:var(--error)">${maint}</div><div class="stat-sub">under service</div></div>`;
 }
-renderRooms();
 
 /* ══════════════════════════════════════════════
    GUESTS
 ══════════════════════════════════════════════ */
-document.getElementById('guestForm').addEventListener('submit', function(e) {
+document.getElementById('guestForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const fname = document.getElementById('gs_fname').value.trim();
   const lname = document.getElementById('gs_lname').value.trim();
   const email = document.getElementById('gs_email').value.trim();
-  if (!fname || !lname) { showToast('Validation Error','Please enter full name.','error'); return; }
-  if (!email) { showToast('Validation Error','Email is required.','error'); return; }
 
-  const rec = {
-    id: 'G-'+counters.guests++,
-    fname, lname, name: fname+' '+lname,
-    email,
-    phone: document.getElementById('gs_phone').value,
-    dob: document.getElementById('gs_dob').value,
-    nationality: document.getElementById('gs_nationality').value,
-    passport: document.getElementById('gs_passport').value
-  };
-  DB.guests.unshift(rec);
-  renderGuests();
-  this.reset();
-  showToast('Guest Registered ✦', `${rec.name} added to the directory.`);
-  updateExplorerIfOpen();
+  if (!fname || !lname) { showToast('Validation Error', 'Please enter full name.', 'error'); return; }
+  if (!email)           { showToast('Validation Error', 'Email is required.', 'error'); return; }
+
+  const guestID = counters.guests++;
+  try {
+    await api('POST', '/guests', {
+      GuestID:       guestID,
+      First_Name:    fname,
+      Last_Name:     lname,
+      Email:         email,
+      Phone:         document.getElementById('gs_phone').value || null,
+      Date_of_Birth: document.getElementById('gs_dob').value   || null
+    });
+    showToast('Guest Registered ✦', `${fname} ${lname} added to the directory.`);
+    this.reset();
+    await loadGuests();
+  } catch (_) {}
 });
 
 document.getElementById('clearGuestBtn').addEventListener('click', () => document.getElementById('guestForm').reset());
+
+async function loadGuests() {
+  try {
+    const data = await api('GET', '/guests');
+    DB.guests = data.map(g => ({
+      id:          'G-' + g.GuestID,
+      dbId:        g.GuestID,
+      name:        (g.First_Name || '') + ' ' + (g.Last_Name || ''),
+      fname:       g.First_Name   || '',
+      lname:       g.Last_Name    || '',
+      email:       g.Email        || '—',
+      phone:       g.Phone        || '—',
+      nationality: g.Nationality  || '—',
+      dob:         g.Date_of_Birth|| '—',
+      passport:    g.Passport_No  || '—'
+    }));
+    renderGuests();
+  } catch (_) {}
+}
+
+async function removeGuest(dbId) {
+  try {
+    await api('DELETE', `/guests/${dbId}`);
+    await loadGuests();
+    updateExplorerIfOpen();
+    showToast('Guest Removed', `Guest #${dbId} deleted.`);
+  } catch (_) {}
+}
 
 function renderGuests() {
   const tbody = document.getElementById('guestsTbody');
@@ -321,46 +450,76 @@ function renderGuests() {
         <td style="font-family:'Cormorant Garamond',serif;color:var(--gold)">${r.id}</td>
         <td>${r.name}</td>
         <td style="color:var(--text-muted)">${r.email}</td>
-        <td>${r.phone||'—'}</td>
-        <td>${r.nationality||'—'}</td>
-        <td>${r.dob||'—'}</td>
-        <td><button class="action-btn danger" onclick="removeRow('guests','${r.id}',renderGuests)">✕ Remove</button></td>
+        <td>${r.phone}</td>
+        <td>${r.nationality}</td>
+        <td>${r.dob}</td>
+        <td><button class="action-btn danger" onclick="removeGuest(${r.dbId})">✕ Remove</button></td>
       </tr>`).join('');
   }
 }
-renderGuests();
 
 /* ══════════════════════════════════════════════
    STAFF
 ══════════════════════════════════════════════ */
-document.getElementById('staffForm').addEventListener('submit', function(e) {
+document.getElementById('staffForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const fname = document.getElementById('sf_fname').value.trim();
   const lname = document.getElementById('sf_lname').value.trim();
   const role  = document.getElementById('sf_role').value;
-  if (!fname || !lname) { showToast('Validation Error','Please enter full name.','error'); return; }
-  if (!role) { showToast('Validation Error','Please select a role.','error'); return; }
 
-  const rec = {
-    id: 'S-'+String(counters.staff++).padStart(3,'0'),
-    name: fname+' '+lname,
-    fname, lname,
-    email: document.getElementById('sf_email').value,
-    phone: document.getElementById('sf_phone').value,
-    role,
-    dept: document.getElementById('sf_dept').value || '—',
-    salary: document.getElementById('sf_salary').value ? Number(document.getElementById('sf_salary').value) : 0,
-    hireDate: document.getElementById('sf_hiredate').value
-  };
-  DB.staff.unshift(rec);
-  renderStaff();
-  this.reset();
-  document.getElementById('sf_hiredate').value = today;
-  showToast('Staff Added ✦', `${rec.name} — ${role} registered.`);
-  updateExplorerIfOpen();
+  if (!fname || !lname) { showToast('Validation Error', 'Please enter full name.', 'error'); return; }
+  if (!role)            { showToast('Validation Error', 'Please select a role.', 'error'); return; }
+
+  const staffID = counters.staff++;
+  try {
+    await api('POST', '/staff', {
+      StaffID:    staffID,
+      First_Name: fname,
+      Last_Name:  lname,
+      Email:      document.getElementById('sf_email').value  || '',
+      Phone:      document.getElementById('sf_phone').value  || null,
+      Hire_Date:  document.getElementById('sf_hiredate').value || today,
+      Salary:     document.getElementById('sf_salary').value
+                    ? Number(document.getElementById('sf_salary').value) : 0,
+      DeptID:     document.getElementById('sf_dept').value   || 1,   // default dept 1
+      RoleId:     role                                                // treated as RoleID int
+    });
+    showToast('Staff Added ✦', `${fname} ${lname} — registered.`);
+    this.reset();
+    document.getElementById('sf_hiredate').value = today;
+    await loadStaff();
+  } catch (_) {}
 });
 
-document.getElementById('clearStaffBtn').addEventListener('click', () => document.getElementById('staffForm').reset());
+document.getElementById('clearStaffBtn').addEventListener('click', () => {
+  document.getElementById('staffForm').reset();
+});
+
+async function loadStaff() {
+  try {
+    const data = await api('GET', '/staff');
+    DB.staff = data.map(s => ({
+      id:       'S-' + String(s.StaffID).padStart(3, '0'),
+      dbId:     s.StaffID,
+      name:     (s.First_Name || '') + ' ' + (s.Last_Name || ''),
+      role:     s.Role_Name  || s.RoleId || '—',
+      dept:     s.Dept_Name  || '—',
+      email:    s.Email      || '—',
+      hireDate: s.Hire_Date  || '—',
+      salary:   s.Salary     || 0
+    }));
+    renderStaff();
+  } catch (_) {}
+}
+
+async function removeStaff(dbId) {
+  try {
+    await api('DELETE', `/staff/${dbId}`);
+    await loadStaff();
+    updateExplorerIfOpen();
+    showToast('Staff Removed', `Staff #${dbId} deleted.`);
+  } catch (_) {}
+}
 
 function renderStaff() {
   const tbody = document.getElementById('staffTbody');
@@ -374,46 +533,81 @@ function renderStaff() {
         <td>${r.name}</td>
         <td>${r.role}</td>
         <td>${r.dept}</td>
-        <td style="color:var(--text-muted)">${r.email||'—'}</td>
+        <td style="color:var(--text-muted)">${r.email}</td>
         <td>${r.salary > 0 ? fmtNPR(r.salary) : '—'}</td>
-        <td><button class="action-btn danger" onclick="removeRow('staff','${r.id}',renderStaff)">✕ Remove</button></td>
+        <td><button class="action-btn danger" onclick="removeStaff(${r.dbId})">✕ Remove</button></td>
       </tr>`).join('');
   }
 }
-renderStaff();
 
 /* ══════════════════════════════════════════════
    PAYMENTS
 ══════════════════════════════════════════════ */
-document.getElementById('paymentForm').addEventListener('submit', function(e) {
+document.getElementById('paymentForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const guest  = document.getElementById('py_guest').value.trim();
   const amount = document.getElementById('py_amount').value;
-  if (!guest)  { showToast('Validation Error','Please enter guest name.','error'); return; }
-  if (!amount) { showToast('Validation Error','Please enter an amount.','error'); return; }
+  const bkRef  = document.getElementById('py_booking').value.trim();
 
-  const rec = {
-    id: '#INV-'+counters.payments++,
-    guest,
-    bookingRef: document.getElementById('py_booking').value || '—',
-    room: document.getElementById('py_room').value || '—',
-    amount: Number(amount),
-    date: document.getElementById('py_date').value || today,
-    method: document.getElementById('py_method').value,
-    status: document.getElementById('py_status').value
-  };
-  DB.payments.unshift(rec);
-  renderPayments();
-  this.reset();
-  document.getElementById('py_date').value = today;
-  showToast('Payment Recorded ✦', `${fmtNPR(rec.amount)} — ${rec.method} — ${rec.status}`);
-  updateExplorerIfOpen();
+  if (!guest)  { showToast('Validation Error', 'Please enter guest name.', 'error'); return; }
+  if (!amount) { showToast('Validation Error', 'Please enter an amount.', 'error'); return; }
+  if (!bkRef)  { showToast('Validation Error', 'Please enter a Booking ID.', 'error'); return; }
+
+  // Extract numeric booking ID from "BK-20251" → 20251
+  const bookingIDNum = parseInt(bkRef.replace(/[^0-9]/g, ''));
+  if (isNaN(bookingIDNum)) {
+    showToast('Validation Error', 'Booking ID must be numeric or in BK-##### format.', 'error');
+    return;
+  }
+
+  const paymentID = counters.payments++;
+  try {
+    await api('POST', '/payments', {
+      PaymentID:      paymentID,
+      Amount:         Number(amount),
+      Payment_Date:   document.getElementById('py_date').value || today,
+      Payment_Status: document.getElementById('py_status').value,
+      Payment_Method: document.getElementById('py_method').value,
+      BookingID:      bookingIDNum
+    });
+    showToast('Payment Recorded ✦', `${fmtNPR(Number(amount))} — ${document.getElementById('py_method').value}`);
+    this.reset();
+    document.getElementById('py_date').value = today;
+    await loadPayments();
+  } catch (_) {}
 });
 
 document.getElementById('clearPaymentBtn').addEventListener('click', () => {
   document.getElementById('paymentForm').reset();
   document.getElementById('py_date').value = today;
 });
+
+async function loadPayments() {
+  try {
+    const data = await api('GET', '/payments');
+    DB.payments = data.map(p => ({
+      id:         '#INV-' + p.PaymentID,
+      dbId:       p.PaymentID,
+      guest:      p.GuestID ? 'Guest #' + p.GuestID : '—',
+      bookingRef: 'BK-' + p.BookingID,
+      room:       '—',
+      amount:     p.Amount         || 0,
+      method:     p.Payment_Method || '—',
+      date:       p.Payment_Date   || '—',
+      status:     p.Payment_Status || '—'
+    }));
+    renderPayments();
+  } catch (_) {}
+}
+
+async function removePayment(dbId) {
+  try {
+    await api('DELETE', `/payments/${dbId}`);
+    await loadPayments();
+    updateExplorerIfOpen();
+    showToast('Payment Removed', `Invoice #${dbId} deleted.`);
+  } catch (_) {}
+}
 
 function renderPayments() {
   const tbody = document.getElementById('paymentsTbody');
@@ -432,46 +626,71 @@ function renderPayments() {
         <td>${r.method}</td>
         <td>${r.date}</td>
         <td>${badgeStatus(r.status)}</td>
-        <td><button class="action-btn danger" onclick="removeRow('payments','${r.id}',renderPayments)">✕ Remove</button></td>
+        <td><button class="action-btn danger" onclick="removePayment(${r.dbId})">✕ Remove</button></td>
       </tr>`).join('');
   }
 
-  const stats = document.getElementById('paymentStats');
-  const completed = DB.payments.filter(p=>p.status==='Completed').reduce((s,p)=>s+p.amount,0);
-  const pending   = DB.payments.filter(p=>p.status==='Pending').length;
+  const stats     = document.getElementById('paymentStats');
+  const completed = DB.payments.filter(p => p.status === 'Completed').reduce((s, p) => s + p.amount, 0);
+  const pending   = DB.payments.filter(p => p.status === 'Pending').length;
   stats.innerHTML = `
-    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Received</div><div class="stat-value">${completed>0?'NPR '+completed.toLocaleString('en-NP'):'—'}</div><div class="stat-sub">completed payments</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Received</div><div class="stat-value">${completed > 0 ? 'NPR ' + completed.toLocaleString('en-NP') : '—'}</div><div class="stat-sub">completed payments</div></div>
     <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-label">Pending</div><div class="stat-value" style="color:var(--error)">${pending}</div><div class="stat-sub">invoices outstanding</div></div>
     <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-label">Total Records</div><div class="stat-value">${DB.payments.length}</div><div class="stat-sub">all transactions</div></div>`;
 }
-renderPayments();
 
 /* ══════════════════════════════════════════════
    SERVICES
 ══════════════════════════════════════════════ */
-document.getElementById('serviceForm').addEventListener('submit', function(e) {
+document.getElementById('serviceForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const name = document.getElementById('sv_name').value.trim();
   const type = document.getElementById('sv_type').value;
-  if (!name) { showToast('Validation Error','Please enter a service name.','error'); return; }
-  if (!type) { showToast('Validation Error','Please select a category.','error'); return; }
 
-  const rec = {
-    id: 'SV-'+String(counters.services++).padStart(2,'0'),
-    name,
-    type,
-    charge: document.getElementById('sv_charge').value || '—',
-    status: document.getElementById('sv_status').value,
-    desc: document.getElementById('sv_desc').value || '—'
-  };
-  DB.services.unshift(rec);
-  renderServices();
-  this.reset();
-  showToast('Service Added ✦', `${name} — ${type} registered.`);
-  updateExplorerIfOpen();
+  if (!name) { showToast('Validation Error', 'Please enter a service name.', 'error'); return; }
+  if (!type) { showToast('Validation Error', 'Please select a category.', 'error'); return; }
+
+  const serviceID = counters.services++;
+  try {
+    await api('POST', '/services', {
+      ServiceID:    serviceID,
+      Service_Name: name,
+      Service_Type: type,
+      Base_Charge:  document.getElementById('sv_charge').value || 0,
+      Description:  document.getElementById('sv_desc').value   || null
+    });
+    showToast('Service Added ✦', `${name} — ${type} registered.`);
+    this.reset();
+    await loadServices();
+  } catch (_) {}
 });
 
 document.getElementById('clearServiceBtn').addEventListener('click', () => document.getElementById('serviceForm').reset());
+
+async function loadServices() {
+  try {
+    const data = await api('GET', '/services');
+    DB.services = data.map(s => ({
+      id:     'SV-' + String(s.ServiceID).padStart(2, '0'),
+      dbId:   s.ServiceID,
+      name:   s.Service_Name || '—',
+      type:   s.Service_Type || '—',
+      charge: s.Base_Charge  || '—',
+      status: s.Status       || 'Active',
+      desc:   s.Description  || '—'
+    }));
+    renderServices();
+  } catch (_) {}
+}
+
+async function removeService(dbId) {
+  try {
+    await api('DELETE', `/services/${dbId}`);
+    await loadServices();
+    updateExplorerIfOpen();
+    showToast('Service Removed', `Service #${dbId} deleted.`);
+  } catch (_) {}
+}
 
 function renderServices() {
   const tbody = document.getElementById('servicesTbody');
@@ -487,11 +706,10 @@ function renderServices() {
         <td>${r.charge}</td>
         <td>${badgeStatus(r.status)}</td>
         <td style="color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.desc}</td>
-        <td><button class="action-btn danger" onclick="removeRow('services','${r.id}',renderServices)">✕ Remove</button></td>
+        <td><button class="action-btn danger" onclick="removeService(${r.dbId})">✕ Remove</button></td>
       </tr>`).join('');
   }
 }
-renderServices();
 
 /* ══════════════════════════════════════════════
    DATA EXPLORER
@@ -504,8 +722,8 @@ const TABLES = [
     cols:['Room No.','Type','Floor','Price/Night','Status'],
     fields:['number','type','floor','price','status'] },
   { key:'guests', label:'Guests', icon:'👤',
-    cols:['Guest ID','Name','Email','Phone','Nationality','DOB','Passport'],
-    fields:['id','name','email','phone','nationality','dob','passport'] },
+    cols:['Guest ID','Name','Email','Phone','Nationality','DOB'],
+    fields:['id','name','email','phone','nationality','dob'] },
   { key:'staff', label:'Staff', icon:'👔',
     cols:['Staff ID','Name','Role','Department','Email','Hire Date','Salary'],
     fields:['id','name','role','dept','email','hireDate','salary'] },
@@ -520,14 +738,14 @@ const TABLES = [
 let activeExplorerTable = 'bookings';
 
 function renderExplorer() {
-  const pillsEl = document.getElementById('explorerPills');
+  const pillsEl   = document.getElementById('explorerPills');
   const contentEl = document.getElementById('explorerContent');
 
   pillsEl.innerHTML = TABLES.map(t =>
-    `<button class="table-pill ${activeExplorerTable===t.key?'active':''}" onclick="switchExplorerTable('${t.key}')">${t.icon} ${t.label}</button>`
+    `<button class="table-pill ${activeExplorerTable === t.key ? 'active' : ''}" onclick="switchExplorerTable('${t.key}')">${t.icon} ${t.label}</button>`
   ).join('');
 
-  const t = TABLES.find(x => x.key === activeExplorerTable);
+  const t    = TABLES.find(x => x.key === activeExplorerTable);
   const rows = DB[t.key];
 
   if (!rows.length) {
@@ -536,14 +754,16 @@ function renderExplorer() {
   }
 
   const theadCols = t.cols.map(c => `<th>${c}</th>`).join('') + '<th>Action</th>';
-  const tbodyRows = rows.map((row, ri) => {
-    const cells = t.fields.map((f,fi) => {
+  const tbodyRows = rows.map((row) => {
+    const cells = t.fields.map(f => {
       let val = row[f] != null ? row[f] : '—';
-      if ((f==='total'||f==='salary'||f==='amount'||f==='price') && Number(val)>0) val = Number(val).toLocaleString('en-NP');
-      if (f==='status'||f==='payStatus') return `<td>${badgeStatus(val)}</td>`;
-      return `<td contenteditable="true" onblur="editCell('${t.key}',${ri},'${f}',this)">${val}</td>`;
+      if ((f==='total'||f==='salary'||f==='amount'||f==='price') && Number(val) > 0)
+        val = Number(val).toLocaleString('en-NP');
+      if (f==='status' || f==='payStatus') return `<td>${badgeStatus(val)}</td>`;
+      return `<td>${val}</td>`;
     }).join('');
-    return `<tr>${cells}<td><button class="action-btn danger" onclick="explorerDelete('${t.key}','${row.id||row.number}')">✕</button></td></tr>`;
+    // Pass dbId for deletion
+    return `<tr>${cells}<td><button class="action-btn danger" onclick="explorerDelete('${t.key}',${row.dbId || 0})">✕</button></td></tr>`;
   }).join('');
 
   contentEl.innerHTML = `
@@ -567,7 +787,7 @@ function renderExplorer() {
       </div>
     </div>`;
 
-  document.getElementById('explorerSearch').addEventListener('input', function() {
+  document.getElementById('explorerSearch').addEventListener('input', function () {
     const q = this.value.toLowerCase();
     document.querySelectorAll('#explorerTable tbody tr').forEach(row => {
       row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
@@ -580,18 +800,35 @@ function switchExplorerTable(key) {
   renderExplorer();
 }
 
-function editCell(tableKey, rowIndex, field, el) {
-  const val = el.textContent.trim();
-  if (DB[tableKey][rowIndex]) {
-    DB[tableKey][rowIndex][field] = val;
-    showToast('Cell Updated', `${field} → "${val}"`);
-  }
+async function explorerDelete(tableKey, dbId) {
+  const endpointMap = {
+    bookings: 'bookings', rooms: 'rooms',
+    guests:   'guests',   staff: 'staff',
+    payments: 'payments', services: 'services'
+  };
+  const loaderMap = {
+    bookings: loadBookings, rooms: loadRooms,
+    guests:   loadGuests,   staff: loadStaff,
+    payments: loadPayments, services: loadServices
+  };
+  try {
+    await api('DELETE', `/${endpointMap[tableKey]}/${dbId}`);
+    await loaderMap[tableKey]();
+    renderExplorer();
+    showToast('Record Deleted', `Record removed from ${tableKey}.`);
+  } catch (_) {}
 }
 
-function explorerDelete(tableKey, rowId) {
-  DB[tableKey] = DB[tableKey].filter(r => (r.id||r.number) !== rowId);
-  const renderMap = {bookings:renderBookings,rooms:renderRooms,guests:renderGuests,staff:renderStaff,payments:renderPayments,services:renderServices};
-  if (renderMap[tableKey]) renderMap[tableKey]();
-  renderExplorer();
-  showToast('Record Deleted', `Record removed from ${tableKey}.`);
-}
+/* ══════════════════════════════════════════════
+   INITIAL DATA LOAD  (on page ready)
+══════════════════════════════════════════════ */
+(async function initLoad() {
+  await Promise.all([
+    loadRooms(),
+    loadGuests(),
+    loadStaff(),
+    loadBookings(),
+    loadPayments(),
+    loadServices()
+  ]);
+})();
