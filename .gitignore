@@ -1,0 +1,14 @@
+# Virtual environment
+.dbms/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE / editor settings
+.vscode/
+*.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
