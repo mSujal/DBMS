@@ -14,11 +14,12 @@ const DB = {
   guests:   [],
   staff:    [],
   payments: [],
-  services: []
+  services: [],
+  roles:    [],       // FIX: needed to map role name → RoleID
+  departments: []     // FIX: needed to map dept name → DeptID
 };
 
-/* ID counters — used only for the auto-ID badge display;
-   real IDs come from the backend after first load         */
+/* ID counters — seeded from highest DB id after first load */
 let counters = {
   bookings: 20251,
   rooms:    1001,
@@ -51,8 +52,8 @@ async function api(method, path, body) {
 /* ═══════════════════════════════════════════
    NAV
 ═══════════════════════════════════════════ */
-const tabs       = document.querySelectorAll('.tab');
-const panels     = document.querySelectorAll('.section-panel');
+const tabs        = document.querySelectorAll('.tab');
+const panels      = document.querySelectorAll('.section-panel');
 const navUnderline = document.getElementById('navUnderline');
 
 function activateTab(tabEl) {
@@ -163,39 +164,111 @@ function updateExplorerIfOpen() {
   if (document.getElementById('tab-explorer').classList.contains('active')) renderExplorer();
 }
 
+/* ═══════════════════════════════════════════
+   FIX: Load Roles & Departments from backend
+   so Staff form can send integer IDs
+═══════════════════════════════════════════ */
+async function loadRoles() {
+  try {
+    const data = await api('GET', '/roles');
+    DB.roles = data; // [{ RoleID, Role_Name, Base_Salary }, ...]
+    populateRoleSelect();
+  } catch (_) {}
+}
+
+async function loadDepartments() {
+  try {
+    const data = await api('GET', '/departments');
+    DB.departments = data; // [{ DeptID, Dept_Name, ... }, ...]
+    populateDeptSelect();
+  } catch (_) {}
+}
+
+// FIX: Populate staff role <select> with real DB roles
+function populateRoleSelect() {
+  const sel = document.getElementById('sf_role');
+  if (!sel) return;
+  const current = sel.value;
+  // Keep the disabled placeholder option
+  sel.innerHTML = '<option value="" disabled selected>Select role</option>';
+  DB.roles.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value       = r.RoleID;       // ← integer FK value
+    opt.textContent = r.Role_Name;    // ← human-readable label
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+// FIX: Populate staff dept <select> with real DB departments
+function populateDeptSelect() {
+  const sel = document.getElementById('sf_dept');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="" disabled selected>Select dept.</option>';
+  DB.departments.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value       = d.DeptID;      // ← integer FK value
+    opt.textContent = d.Dept_Name;   // ← human-readable label
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+/* ═══════════════════════════════════════════
+   FIX: Populate booking room dropdown from DB
+   instead of using hardcoded HTML options
+═══════════════════════════════════════════ */
+function populateBookingRoomSelect() {
+  const sel = document.getElementById('bk_room');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="" disabled selected>Select room</option>';
+  // Only show available rooms
+  const available = DB.rooms.filter(r => r.status === 'Available');
+  available.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value       = r.dbId;                               // ← integer RoomID (what the form now sends)
+    opt.textContent = `${r.number} — ${r.type} (${fmtNPR(r.price)}/night)`;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
 /* ══════════════════════════════════════════════════════════════
    BOOKINGS
-   Flow: Guest must exist first (GuestID required by DB FK).
-   We use the numeric part of the frontend guest ID to link them.
 ══════════════════════════════════════════════════════════════ */
 document.getElementById('bookingForm').addEventListener('submit', async function (e) {
   e.preventDefault();
 
-  const name  = document.getElementById('bk_guestName').value.trim();
-  const room  = document.getElementById('bk_room').value.trim();
-  const cin   = document.getElementById('bk_checkin').value;
-  const cout  = document.getElementById('bk_checkout').value;
+  const name    = document.getElementById('bk_guestName').value.trim();
+  // FIX: room select now has dbId (integer) as value
+  const roomDbId = parseInt(document.getElementById('bk_room').value);
+  const cin      = document.getElementById('bk_checkin').value;
+  const cout     = document.getElementById('bk_checkout').value;
 
-  if (!name)          { showToast('Validation Error', 'Please enter the guest name.', 'error'); return; }
-  if (!room)          { showToast('Validation Error', 'Please select a room.', 'error'); return; }
-  if (!cin || !cout)  { showToast('Validation Error', 'Please set check-in and check-out dates.', 'error'); return; }
-  if (cout <= cin)    { showToast('Validation Error', 'Check-out must be after check-in.', 'error'); return; }
+  if (!name)            { showToast('Validation Error', 'Please enter the guest name.', 'error'); return; }
+  if (!roomDbId)        { showToast('Validation Error', 'Please select a room.', 'error'); return; }
+  if (!cin || !cout)    { showToast('Validation Error', 'Please set check-in and check-out dates.', 'error'); return; }
+  if (cout <= cin)      { showToast('Validation Error', 'Check-out must be after check-in.', 'error'); return; }
 
   const nights = Math.round((new Date(cout) - new Date(cin)) / 86400000);
   const rate   = parseFloat(document.getElementById('bk_rate').value) || 0;
   const total  = rate > 0 ? rate * nights : 0;
 
-  // Try to find matching guest in local DB (matched by name)
-  const matchedGuest = DB.guests.find(g => g.name.toLowerCase() === name.toLowerCase());
+  // FIX: match guest by name from locally loaded DB.guests
+  const matchedGuest = DB.guests.find(g =>
+    g.name.toLowerCase() === name.toLowerCase()
+  );
   if (!matchedGuest) {
     showToast('Guest Not Found', `Please register "${name}" in the Guests tab first.`, 'error');
     return;
   }
 
-  // Try to find matching room in local DB
-  const matchedRoom = DB.rooms.find(r => r.number === room || r.id === room);
+  // FIX: room is already the dbId integer from the select value
+  const matchedRoom = DB.rooms.find(r => r.dbId === roomDbId);
   if (!matchedRoom) {
-    showToast('Room Not Found', `Please add room "${room}" in the Rooms tab first.`, 'error');
+    showToast('Room Not Found', 'Selected room no longer exists. Please refresh.', 'error');
     return;
   }
 
@@ -205,12 +278,12 @@ document.getElementById('bookingForm').addEventListener('submit', async function
   try {
     // 1. Create booking
     await api('POST', '/bookings', {
-      BookingID:      bookingID,
-      Booking_Date:   cin,
+      BookingID:       bookingID,
+      Booking_Date:    cin,
       Number_of_Guest: parseInt(document.getElementById('bk_numguests').value) || 1,
-      Total_Amount:   total,
-      Booking_Status: document.getElementById('bk_status').value,
-      GuestID:        matchedGuest.dbId
+      Total_Amount:    total,
+      Booking_Status:  document.getElementById('bk_status').value,
+      GuestID:         matchedGuest.dbId
     });
 
     // 2. Assign room to booking
@@ -222,11 +295,13 @@ document.getElementById('bookingForm').addEventListener('submit', async function
       Room_Price:     rate
     });
 
-    showToast('Booking Confirmed ✦', `${name} · Room ${room} · ${nights} night${nights !== 1 ? 's' : ''}`);
+    showToast('Booking Confirmed ✦', `${name} · Room ${matchedRoom.number} · ${nights} night${nights !== 1 ? 's' : ''}`);
     this.reset();
     document.getElementById('bk_checkin').value  = today;
     document.getElementById('bk_checkout').value = tomorrow;
     await loadBookings();
+    // FIX: refresh room dropdown in case status changed
+    populateBookingRoomSelect();
   } catch (_) { /* error already shown by api() */ }
 });
 
@@ -254,6 +329,12 @@ async function loadBookings() {
       payMethod: b.Payment_Method || '—',
       payStatus: b.Payment_Status || '—'
     }));
+    // Seed counter above current max
+    if (DB.bookings.length) {
+      const maxId = Math.max(...DB.bookings.map(b => b.dbId));
+      if (maxId >= counters.bookings) counters.bookings = maxId + 1;
+      refreshAutoId();
+    }
     renderBookings();
   } catch (_) {}
 }
@@ -311,7 +392,10 @@ document.getElementById('roomForm').addEventListener('submit', async function (e
   if (!num)  { showToast('Validation Error', 'Please enter a room number.', 'error'); return; }
   if (!type) { showToast('Validation Error', 'Please select a room type.', 'error'); return; }
 
-  const roomID = counters.rooms++;
+  // FIX: use the room number entered by user as RoomID (must be integer)
+  const roomID = parseInt(num);
+  if (isNaN(roomID)) { showToast('Validation Error', 'Room number must be numeric.', 'error'); return; }
+
   try {
     await api('POST', '/rooms', {
       RoomID:      roomID,
@@ -334,13 +418,15 @@ async function loadRooms() {
     DB.rooms = data.map(r => ({
       id:     'RM-' + r.RoomID,
       dbId:   r.RoomID,
-      number: String(r.RoomID),           // room number = RoomID from DB
+      number: String(r.RoomID),
       type:   r.Room_Type  || '—',
       floor:  r.Floor      || '—',
       price:  r.Base_Price || 0,
       status: r.Room_Status || '—'
     }));
     renderRooms();
+    // FIX: refresh booking dropdown whenever room list changes
+    populateBookingRoomSelect();
   } catch (_) {}
 }
 
@@ -426,6 +512,11 @@ async function loadGuests() {
       dob:         g.Date_of_Birth|| '—',
       passport:    g.Passport_No  || '—'
     }));
+    // Seed counter
+    if (DB.guests.length) {
+      const maxId = Math.max(...DB.guests.map(g => g.dbId));
+      if (maxId >= counters.guests) counters.guests = maxId + 1;
+    }
     renderGuests();
   } catch (_) {}
 }
@@ -460,15 +551,21 @@ function renderGuests() {
 
 /* ══════════════════════════════════════════════
    STAFF
+   FIX: RoleId and DeptID are now integer FKs
+   loaded from /roles and /departments endpoints
 ══════════════════════════════════════════════ */
 document.getElementById('staffForm').addEventListener('submit', async function (e) {
   e.preventDefault();
-  const fname = document.getElementById('sf_fname').value.trim();
-  const lname = document.getElementById('sf_lname').value.trim();
-  const role  = document.getElementById('sf_role').value;
+  const fname  = document.getElementById('sf_fname').value.trim();
+  const lname  = document.getElementById('sf_lname').value.trim();
+  // FIX: sf_role select now holds integer RoleID as its value
+  const roleId = parseInt(document.getElementById('sf_role').value);
+  // FIX: sf_dept select now holds integer DeptID as its value
+  const deptId = parseInt(document.getElementById('sf_dept').value);
 
   if (!fname || !lname) { showToast('Validation Error', 'Please enter full name.', 'error'); return; }
-  if (!role)            { showToast('Validation Error', 'Please select a role.', 'error'); return; }
+  if (!roleId)          { showToast('Validation Error', 'Please select a role.', 'error'); return; }
+  if (!deptId)          { showToast('Validation Error', 'Please select a department.', 'error'); return; }
 
   const staffID = counters.staff++;
   try {
@@ -481,8 +578,8 @@ document.getElementById('staffForm').addEventListener('submit', async function (
       Hire_Date:  document.getElementById('sf_hiredate').value || today,
       Salary:     document.getElementById('sf_salary').value
                     ? Number(document.getElementById('sf_salary').value) : 0,
-      DeptID:     document.getElementById('sf_dept').value   || 1,   // default dept 1
-      RoleId:     role                                                // treated as RoleID int
+      DeptID:     deptId,   // ← integer FK from select
+      RoleId:     roleId    // ← integer FK from select
     });
     showToast('Staff Added ✦', `${fname} ${lname} — registered.`);
     this.reset();
@@ -508,6 +605,11 @@ async function loadStaff() {
       hireDate: s.Hire_Date  || '—',
       salary:   s.Salary     || 0
     }));
+    // Seed counter
+    if (DB.staff.length) {
+      const maxId = Math.max(...DB.staff.map(s => s.dbId));
+      if (maxId >= counters.staff) counters.staff = maxId + 1;
+    }
     renderStaff();
   } catch (_) {}
 }
@@ -553,7 +655,6 @@ document.getElementById('paymentForm').addEventListener('submit', async function
   if (!amount) { showToast('Validation Error', 'Please enter an amount.', 'error'); return; }
   if (!bkRef)  { showToast('Validation Error', 'Please enter a Booking ID.', 'error'); return; }
 
-  // Extract numeric booking ID from "BK-20251" → 20251
   const bookingIDNum = parseInt(bkRef.replace(/[^0-9]/g, ''));
   if (isNaN(bookingIDNum)) {
     showToast('Validation Error', 'Booking ID must be numeric or in BK-##### format.', 'error');
@@ -596,6 +697,10 @@ async function loadPayments() {
       date:       p.Payment_Date   || '—',
       status:     p.Payment_Status || '—'
     }));
+    if (DB.payments.length) {
+      const maxId = Math.max(...DB.payments.map(p => p.dbId));
+      if (maxId >= counters.payments) counters.payments = maxId + 1;
+    }
     renderPayments();
   } catch (_) {}
 }
@@ -762,7 +867,6 @@ function renderExplorer() {
       if (f==='status' || f==='payStatus') return `<td>${badgeStatus(val)}</td>`;
       return `<td>${val}</td>`;
     }).join('');
-    // Pass dbId for deletion
     return `<tr>${cells}<td><button class="action-btn danger" onclick="explorerDelete('${t.key}',${row.dbId || 0})">✕</button></td></tr>`;
   }).join('');
 
@@ -821,10 +925,16 @@ async function explorerDelete(tableKey, dbId) {
 
 /* ══════════════════════════════════════════════
    INITIAL DATA LOAD  (on page ready)
+   FIX: load roles & departments first so
+   selects are populated before user interaction
 ══════════════════════════════════════════════ */
 (async function initLoad() {
+  // Load reference data first (roles + depts needed by Staff form)
+  await Promise.all([loadRoles(), loadDepartments()]);
+
+  // Then load all entity data in parallel
   await Promise.all([
-    loadRooms(),
+    loadRooms(),      // also populates booking room dropdown
     loadGuests(),
     loadStaff(),
     loadBookings(),

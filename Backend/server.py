@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-user     = os.getenv("USERNAME")
+# FIX: USERNAME is a reserved OS env var on Windows/Linux — use DB_USER instead
+# Update your .env file: change USERNAME=... to DB_USER=...
+user     = os.getenv("DB_USER")
 password = os.getenv("PASSWORD")
 
 app = Flask(__name__)
@@ -22,7 +24,7 @@ DB_CONFIG = {
 }
 
 def get_connection():
-    return mysql.connector.connect(**DB_CONFIG)   # ← was * (bug fix)
+    return mysql.connector.connect(**DB_CONFIG)
 
 
 # ──────────────────────────────────────────────
