@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grand Horizon — HMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="bg-layer bg-layer-1"></div>
+<div class="bg-layer bg-layer-2"></div>
+<div class="bg-grain"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="16" width="34" height="22" rx="3" fill="rgba(201,168,76,0.12)" stroke="#c9a84c" stroke-width="1.3"/>
+        <path d="M9 16V11a11 11 0 0 1 22 0v5" stroke="#c9a84c" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+        <rect x="15" y="25" width="10" height="13" rx="1.5" fill="rgba(201,168,76,0.25)"/>
+        <circle cx="20" cy="22" r="2" fill="#c9a84c"/>
+      </svg>
+    </div>
+    <div class="logo-text">Grand <span>Horizon</span></div>
+    <div class="logo-sep">|</div>
+    <div class="logo-sub">Hotel Management System</div>
+  </div>
+  <div class="header-right">
+    <div class="header-time" id="headerTime"></div>
+    <div class="header-divider"></div>
+    <div class="status-pill"><div class="status-dot"></div>System Online</div>
+    <div class="header-divider"></div>
+    <div class="admin-badge"><span>👤</span> Admin</div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <button class="tab active" data-tab="bookings"><span class="tab-icon">🛎</span><span>Bookings</span></button>
+    <button class="tab" data-tab="rooms"><span class="tab-icon">🛏</span><span>Rooms</span></button>
+    <button class="tab" data-tab="guests"><span class="tab-icon">👤</span><span>Guests</span></button>
+    <button class="tab" data-tab="staff"><span class="tab-icon">👔</span><span>Staff</span></button>
+    <button class="tab" data-tab="payments"><span class="tab-icon">💳</span><span>Payments</span></button>
+    <button class="tab" data-tab="services"><span class="tab-icon">✨</span><span>Services</span></button>
+    <button class="tab" data-tab="explorer"><span class="tab-icon">🗄</span><span>Data Explorer</span></button>
+  </div>
+  <div class="nav-underline" id="navUnderline"></div>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════
+     BOOKINGS
+══════════════════════════════ -->
+<div class="section-panel active" id="tab-bookings">
+  <div class="page-split">
+    <!-- FORM -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="form-card-icon">🛎</div>
+        <div>
+          <div class="form-card-title">New Reservation</div>
+          <div class="form-card-sub">BK-<span id="autoId">20251</span></div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <form id="bookingForm" novalidate>
+          <div class="section-divider"><span>Guest</span></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">✦</span>
+                <input type="text" id="bk_guestName" placeholder="John Doe" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <div class="input-wrap">
+                <span class="input-icon">📞</span>
+                <input type="tel" id="bk_phone" placeholder="+977 98...">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <div class="input-wrap">
+              <span class="input-icon">✉</span>
+              <input type="email" id="bk_email" placeholder="guest@email.com">
+            </div>
+          </div>
+
+          <div class="section-divider"><span>Room &amp; Stay</span></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Room <sup>*</sup></label>
+              <div class="input-wrap no-icon">
+                <select id="bk_room" required>
+                  <option value="" disabled selected>Select room</option>
+                  <option value="101 — Deluxe Single">101 — Deluxe Single</option>
+                  <option value="102 — Deluxe Double">102 — Deluxe Double</option>
+                  <option value="201 — Junior Suite">201 — Junior Suite</option>
+                  <option value="202 — Junior Suite">202 — Junior Suite</option>
+                  <option value="301 — Executive Suite">301 — Executive Suite</option>
+                  <option value="401 — Presidential Suite">401 — Presidential Suite</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Guests</label>
+              <div class="input-wrap">
+                <span class="input-icon">👥</span>
+                <input type="number" id="bk_numguests" value="1" min="1" max="10">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Check-In <sup>*</sup></label>
+              <div class="input-wrap no-icon">
+                <input type="date" id="bk_checkin" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Check-Out <sup>*</sup></label>
+              <div class="input-wrap no-icon">
+                <input type="date" id="bk_checkout" required>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Rate / Night (NPR)</label>
+              <div class="input-wrap">
+                <span class="input-icon">₨</span>
+                <input type="number" id="bk_rate" placeholder="0.00" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <div class="input-wrap no-icon">
+                <select id="bk_status">
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Checked-In">Checked-In</option>
+                  <option value="Checked-Out">Checked-Out</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-divider"><span>Payment</span></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payment Method</label>
+              <div class="input-wrap no-icon">
+                <select id="bk_paymethod">
+                  <option value="Cash">Cash</option>
+                  <option value="Card">Card</option>
+                  <option value="Online Transfer">Online Transfer</option>
+                  <option value="eSewa">eSewa</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Payment Status</label>
+              <div class="input-wrap no-icon">
+                <select id="bk_paystatus">
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Refunded">Refunded</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" id="clearBookingBtn">Clear</button>
+            <button type="submit" class="btn-primary">✦ Confirm Booking</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TABLE SIDE -->
+    <div class="table-side">
+      <div class="stats-row stats-row-4" id="bookingStats"></div>
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <div class="table-title">Reservation Records <span class="table-count" id="bkCount">0</span></div>
+          </div>
+          <div class="table-actions">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search..." class="table-search" data-table="bookingsTable">
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="bookingsTable">
+            <thead><tr>
+              <th>Booking ID</th><th>Guest</th><th>Room</th>
+              <th>Check-In</th><th>Check-Out</th>
+              <th>Amount</th><th>Status</th><th>Payment</th><th>Action</th>
+            </tr></thead>
+            <tbody id="bookingsTbody">
+              <tr class="empty-row"><td colspan="9">
+                <div class="empty-state">
+                  <div class="empty-icon">🛎</div>
+                  <p>No bookings yet. Create your first reservation.</p>
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     ROOMS
+══════════════════════════════ -->
+<div class="section-panel" id="tab-rooms">
+  <div class="page-split">
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="form-card-icon">🛏</div>
+        <div>
+          <div class="form-card-title">Add Room</div>
+          <div class="form-card-sub">Register a new room to inventory</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <form id="roomForm" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Room No. <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">🔢</span>
+                <input type="text" id="rm_number" placeholder="e.g. 101" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Floor <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">🏢</span>
+                <input type="number" id="rm_floor" placeholder="1" min="1" required>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Room Type <sup>*</sup></label>
+              <div class="input-wrap no-icon">
+                <select id="rm_type" required>
+                  <option value="" disabled selected>Select type</option>
+                  <option>Standard</option>
+                  <option>Deluxe</option>
+                  <option>Suite</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <div class="input-wrap no-icon">
+                <select id="rm_status">
+                  <option>Available</option>
+                  <option>Occupied</option>
+                  <option>Under Maintenance</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Base Price / Night (NPR) <sup>*</sup></label>
+            <div class="input-wrap">
+              <span class="input-icon">₨</span>
+              <input type="number" id="rm_price" placeholder="e.g. 4500" min="0" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="rm_desc" placeholder="Optional room notes..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" id="clearRoomBtn">Clear</button>
+            <button type="submit" class="btn-primary">✦ Add Room</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="table-side">
+      <div class="stats-row stats-row-3" id="roomStats"></div>
+      <div class="table-card">
+        <div class="table-header">
+          <div><div class="table-title">Room Inventory <span class="table-count" id="rmCount">0</span></div></div>
+          <div class="table-actions">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search rooms..." class="table-search" data-table="roomsTable">
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="roomsTable">
+            <thead><tr><th>Room No.</th><th>Type</th><th>Floor</th><th>Price/Night</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="roomsTbody">
+              <tr class="empty-row"><td colspan="6">
+                <div class="empty-state"><div class="empty-icon">🛏</div><p>No rooms added yet.</p></div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     GUESTS
+══════════════════════════════ -->
+<div class="section-panel" id="tab-guests">
+  <div class="page-split">
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="form-card-icon">👤</div>
+        <div>
+          <div class="form-card-title">Register Guest</div>
+          <div class="form-card-sub">Add a new guest to the directory</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <form id="guestForm" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label>First Name <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">✦</span>
+                <input type="text" id="gs_fname" placeholder="First" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Last Name <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">✦</span>
+                <input type="text" id="gs_lname" placeholder="Last" required>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email <sup>*</sup></label>
+            <div class="input-wrap">
+              <span class="input-icon">✉</span>
+              <input type="email" id="gs_email" placeholder="guest@email.com" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone</label>
+              <div class="input-wrap">
+                <span class="input-icon">📞</span>
+                <input type="tel" id="gs_phone" placeholder="+977 98...">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Date of Birth</label>
+              <div class="input-wrap no-icon">
+                <input type="date" id="gs_dob">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nationality</label>
+              <div class="input-wrap">
+                <span class="input-icon">🌐</span>
+                <input type="text" id="gs_nationality" placeholder="e.g. Nepali">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>ID / Passport</label>
+              <div class="input-wrap">
+                <span class="input-icon">🛂</span>
+                <input type="text" id="gs_passport" placeholder="Passport No.">
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" id="clearGuestBtn">Clear</button>
+            <button type="submit" class="btn-primary">✦ Register Guest</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="table-side">
+      <div class="table-card">
+        <div class="table-header">
+          <div><div class="table-title">Guest Directory <span class="table-count" id="gsCount">0</span></div></div>
+          <div class="table-actions">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search guests..." class="table-search" data-table="guestsTable">
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="guestsTable">
+            <thead><tr><th>Guest ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Nationality</th><th>DOB</th><th>Action</th></tr></thead>
+            <tbody id="guestsTbody">
+              <tr class="empty-row"><td colspan="7">
+                <div class="empty-state"><div class="empty-icon">👤</div><p>No guests registered yet.</p></div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     STAFF
+══════════════════════════════ -->
+<div class="section-panel" id="tab-staff">
+  <div class="page-split">
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="form-card-icon">👔</div>
+        <div>
+          <div class="form-card-title">Add Staff Member</div>
+          <div class="form-card-sub">Register a new employee</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <form id="staffForm" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label>First Name <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">✦</span>
+                <input type="text" id="sf_fname" placeholder="First" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Last Name <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">✦</span>
+                <input type="text" id="sf_lname" placeholder="Last" required>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email <sup>*</sup></label>
+            <div class="input-wrap">
+              <span class="input-icon">✉</span>
+              <input type="email" id="sf_email" placeholder="staff@hotel.com" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone</label>
+              <div class="input-wrap">
+                <span class="input-icon">📞</span>
+                <input type="tel" id="sf_phone" placeholder="+977 98...">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Hire Date</label>
+              <div class="input-wrap no-icon">
+                <input type="date" id="sf_hiredate">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Role <sup>*</sup></label>
+              <div class="input-wrap no-icon">
+                <select id="sf_role" required>
+                  <option value="" disabled selected>Select role</option>
+                  <option>Receptionist</option>
+                  <option>Housekeeping</option>
+                  <option>Chef</option>
+                  <option>Manager</option>
+                  <option>Security</option>
+                  <option>Maintenance</option>
+                  <option>Concierge</option>
+                  <option>Accountant</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Department</label>
+              <div class="input-wrap no-icon">
+                <select id="sf_dept">
+                  <option value="" disabled selected>Select dept.</option>
+                  <option>Front Desk</option>
+                  <option>Housekeeping</option>
+                  <option>Kitchen</option>
+                  <option>Management</option>
+                  <option>Security</option>
+                  <option>Maintenance</option>
+                  <option>Finance</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Salary (NPR)</label>
+            <div class="input-wrap">
+              <span class="input-icon">₨</span>
+              <input type="number" id="sf_salary" placeholder="Monthly salary" min="0">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" id="clearStaffBtn">Clear</button>
+            <button type="submit" class="btn-primary">✦ Add Staff</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="table-side">
+      <div class="table-card">
+        <div class="table-header">
+          <div><div class="table-title">Staff Directory <span class="table-count" id="sfCount">0</span></div></div>
+          <div class="table-actions">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search staff..." class="table-search" data-table="staffTable">
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="staffTable">
+            <thead><tr><th>Staff ID</th><th>Name</th><th>Role</th><th>Department</th><th>Email</th><th>Salary</th><th>Action</th></tr></thead>
+            <tbody id="staffTbody">
+              <tr class="empty-row"><td colspan="7">
+                <div class="empty-state"><div class="empty-icon">👔</div><p>No staff added yet.</p></div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PAYMENTS
+══════════════════════════════ -->
+<div class="section-panel" id="tab-payments">
+  <div class="page-split">
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="form-card-icon">💳</div>
+        <div>
+          <div class="form-card-title">Record Payment</div>
+          <div class="form-card-sub">Log a payment transaction</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <form id="paymentForm" novalidate>
+          <div class="form-group">
+            <label>Guest Name <sup>*</sup></label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input type="text" id="py_guest" placeholder="Guest name" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Booking Ref.</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔖</span>
+                <input type="text" id="py_booking" placeholder="BK-XXXXX">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Room</label>
+              <div class="input-wrap">
+                <span class="input-icon">🛏</span>
+                <input type="text" id="py_room" placeholder="Room no.">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Amount (NPR) <sup>*</sup></label>
+              <div class="input-wrap">
+                <span class="input-icon">₨</span>
+                <input type="number" id="py_amount" placeholder="0.00" min="0" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Payment Date</label>
+              <div class="input-wrap no-icon">
+                <input type="date" id="py_date">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Method</label>
+              <div class="input-wrap no-icon">
+                <select id="py_method">
+                  <option>Cash</option>
+                  <option>Card</option>
+                  <option>Online Transfer</option>
+                  <option>eSewa</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <div class="input-wrap no-icon">
+                <select id="py_status">
+                  <option>Completed</option>
+                  <option>Pending</option>
+                  <option>Refunded</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" id="clearPaymentBtn">Clear</button>
+            <button type="submit" class="btn-primary">✦ Record Payment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="table-side">
+      <div class="stats-row stats-row-3" id="paymentStats"></div>
+      <div class="table-card">
+        <div class="table-header">
+          <div><div class="table-title">Payment Records <span class="table-count" id="pyCount">0</span></div></div>
+          <div class="table-actions">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search payments..." class="table-search" data-table="paymentsTable">
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="paymentsTable">
+            <thead><tr><th>Invoice ID</th><th>Guest</th><th>Booking Ref.</th><th>Room</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="paymentsTbody">
+              <tr class="empty-row"><td colspan="9">
+                <div class="empty-state"><div class="empty-icon">💳</div><p>No payments recorded yet.</p></div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     SERVICES
+══════════════════════════════ -->
+<div class="section-panel" id="tab-services">
+  <div class="page-split">
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="form-card-icon">✨</div>
+        <div>
+          <div class="form-card-title">Add Service</div>
+          <div class="form-card-sub">Register a hotel service</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <form id="serviceForm" novalidate>
+          <div class="form-group">
+            <label>Service Name <sup>*</sup></label>
+            <div class="input-wrap">
+              <span class="input-icon">✨</span>
+              <input type="text" id="sv_name" placeholder="e.g. Spa &amp; Wellness" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category <sup>*</sup></label>
+              <div class="input-wrap no-icon">
+                <select id="sv_type" required>
+                  <option value="" disabled selected>Category</option>
+                  <option>Food &amp; Beverage</option>
+                  <option>Wellness</option>
+                  <option>Transport</option>
+                  <option>Housekeeping</option>
+                  <option>Events</option>
+                  <option>Business</option>
+                  <option>Recreation</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <div class="input-wrap no-icon">
+                <select id="sv_status">
+                  <option>Active</option>
+                  <option>Limited</option>
+                  <option>Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Base Charge</label>
+            <div class="input-wrap">
+              <span class="input-icon">₨</span>
+              <input type="text" id="sv_charge" placeholder="e.g. NPR 2,500/hr or As per menu">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="sv_desc" placeholder="Brief description of the service..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" id="clearServiceBtn">Clear</button>
+            <button type="submit" class="btn-primary">✦ Add Service</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="table-side">
+      <div class="table-card">
+        <div class="table-header">
+          <div><div class="table-title">Hotel Services <span class="table-count" id="svCount">0</span></div></div>
+          <div class="table-actions">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search services..." class="table-search" data-table="servicesTable">
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="servicesTable">
+            <thead><tr><th>Service ID</th><th>Name</th><th>Category</th><th>Charge</th><th>Status</th><th>Description</th><th>Action</th></tr></thead>
+            <tbody id="servicesTbody">
+              <tr class="empty-row"><td colspan="7">
+                <div class="empty-state"><div class="empty-icon">✨</div><p>No services added yet.</p></div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     DATA EXPLORER
+══════════════════════════════ -->
+<div class="section-panel" id="tab-explorer">
+  <div class="explorer-header">
+    <div>
+      <div class="explorer-title">Data <span>Explorer</span></div>
+      <div class="explorer-subtitle">Browse and inline-edit all records across every table · Click any cell to edit</div>
+    </div>
+    <div class="edit-hint">Click any cell to edit inline</div>
+  </div>
+  <div class="table-pills" id="explorerPills"></div>
+  <div id="explorerContent"></div>
+</div>
+
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toastIcon">✦</div>
+  <div style="flex:1">
+    <div class="toast-title" id="toastTitle">Success</div>
+    <div class="toast-msg" id="toastMsg"></div>
+  </div>
+  <button class="toast-close" id="toastClose">✕</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
