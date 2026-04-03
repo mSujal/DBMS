@@ -14,7 +14,7 @@ user     = os.getenv("DB_USER")
 password = os.getenv("PASSWORD")
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500"])
 
 DB_CONFIG = {
     "host":     "localhost",
