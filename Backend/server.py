@@ -6,21 +6,24 @@ from mysql.connector import Error
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent.parent / ".env")
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-# FIX: USERNAME is a reserved OS env var on Windows/Linux — use DB_USER instead
-# Update your .env file: change USERNAME=... to DB_USER=...
+# ----------------- DEBUG: check .env values -----------------
+print("DB_USER:", os.getenv("DB_USER"))
+print("DB_NAME:", os.getenv("DB_NAME"))
+# ------------------------------------------------------------
+
 user     = os.getenv("DB_USER")
-password = os.getenv("PASSWORD")
+password = os.getenv("DB_PASSWORD")
 
 app = Flask(__name__)
 CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500"])
 
 DB_CONFIG = {
-    "host":     "localhost",
-    "user":     user,
-    "password": password,
-    "database": "Hotel_Management"
+    "host": os.getenv("DB_HOST"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "database": os.getenv("DB_NAME")
 }
 
 def get_connection():
@@ -33,6 +36,7 @@ def get_connection():
 
 @app.route("/roles", methods=["GET"])
 def get_roles():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -41,10 +45,12 @@ def get_roles():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/roles/<int:role_id>", methods=["GET"])
 def get_role(role_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -56,10 +62,12 @@ def get_role(role_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/roles", methods=["POST"])
 def create_role():
+    conn = cursor = None
     data = request.get_json()
     if not data or not all(k in data for k in ("RoleID","Role_Name","Base_Salary")):
         return jsonify({"error": "Missing required fields: RoleID, Role_Name, Base_Salary"}), 400
@@ -75,10 +83,12 @@ def create_role():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/roles/<int:role_id>", methods=["PUT"])
 def update_role(role_id):
+    conn = cursor = None
     data = request.get_json()
     if not data or not all(k in data for k in ("Role_Name","Base_Salary")):
         return jsonify({"error": "Missing required fields: Role_Name, Base_Salary"}), 400
@@ -94,20 +104,25 @@ def update_role(role_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/roles/<int:role_id>", methods=["DELETE"])
 def delete_role(role_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
+        # Remove role from staff first
+        cursor.execute("UPDATE Staff SET RoleId = NULL WHERE RoleId = %s", (role_id,))
         cursor.execute("DELETE FROM Roles WHERE RoleID = %s", (role_id,))
         conn.commit()
         return jsonify({"message": "Role deleted"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -116,6 +131,7 @@ def delete_role(role_id):
 
 @app.route("/departments", methods=["GET"])
 def get_departments():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -127,10 +143,12 @@ def get_departments():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/departments/<int:dept_id>", methods=["GET"])
 def get_department(dept_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -146,10 +164,12 @@ def get_department(dept_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/departments", methods=["POST"])
 def create_department():
+    conn = cursor = None
     data = request.get_json()
     if not data or not all(k in data for k in ("DeptID","Dept_Name")):
         return jsonify({"error": "Missing required fields: DeptID, Dept_Name"}), 400
@@ -165,10 +185,12 @@ def create_department():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/departments/<int:dept_id>", methods=["PUT"])
 def update_department(dept_id):
+    conn = cursor = None
     data = request.get_json()
     if not data or "Dept_Name" not in data:
         return jsonify({"error": "Missing required field: Dept_Name"}), 400
@@ -184,20 +206,26 @@ def update_department(dept_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/departments/<int:dept_id>", methods=["DELETE"])
 def delete_department(dept_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
+        # Remove manager link first, then remove staff dept link
+        cursor.execute("UPDATE Department SET ManagerId = NULL WHERE DeptID = %s", (dept_id,))
+        cursor.execute("UPDATE Staff SET DeptID = NULL WHERE DeptID = %s", (dept_id,))
         cursor.execute("DELETE FROM Department WHERE DeptID = %s", (dept_id,))
         conn.commit()
         return jsonify({"message": "Department deleted"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -206,6 +234,7 @@ def delete_department(dept_id):
 
 @app.route("/staff", methods=["GET"])
 def get_all_staff():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -219,10 +248,12 @@ def get_all_staff():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/staff/<int:staff_id>", methods=["GET"])
 def get_staff(staff_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -240,10 +271,12 @@ def get_staff(staff_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/staff", methods=["POST"])
 def create_staff():
+    conn = cursor = None
     data = request.get_json()
     required = ("StaffID","First_Name","Last_Name","Email","Hire_Date","Salary","DeptID","RoleId")
     if not data or not all(k in data for k in required):
@@ -261,10 +294,12 @@ def create_staff():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/staff/<int:staff_id>", methods=["PUT"])
 def update_staff(staff_id):
+    conn = cursor = None
     data = request.get_json()
     required = ("First_Name","Last_Name","Email","Hire_Date","Salary","DeptID","RoleId")
     if not data or not all(k in data for k in required):
@@ -282,20 +317,27 @@ def update_staff(staff_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/staff/<int:staff_id>", methods=["DELETE"])
 def delete_staff(staff_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
+        # Remove manager reference from department first
+        cursor.execute("UPDATE Department SET ManagerId = NULL WHERE ManagerId = %s", (staff_id,))
+        # Remove maintenance requests assigned to this staff
+        cursor.execute("DELETE FROM Maintenance_Request WHERE StaffID = %s", (staff_id,))
         cursor.execute("DELETE FROM Staff WHERE StaffID = %s", (staff_id,))
         conn.commit()
         return jsonify({"message": "Staff deleted"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -304,6 +346,7 @@ def delete_staff(staff_id):
 
 @app.route("/guests", methods=["GET"])
 def get_guests():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -312,10 +355,12 @@ def get_guests():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/guests/<int:guest_id>", methods=["GET"])
 def get_guest(guest_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -327,10 +372,12 @@ def get_guest(guest_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/guests", methods=["POST"])
 def create_guest():
+    conn = cursor = None
     data = request.get_json()
     required = ("GuestID","First_Name","Last_Name","Email")
     if not data or not all(k in data for k in required):
@@ -348,10 +395,12 @@ def create_guest():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/guests/<int:guest_id>", methods=["PUT"])
 def update_guest(guest_id):
+    conn = cursor = None
     data = request.get_json()
     required = ("First_Name","Last_Name","Email")
     if not data or not all(k in data for k in required):
@@ -369,20 +418,40 @@ def update_guest(guest_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/guests/<int:guest_id>", methods=["DELETE"])
 def delete_guest(guest_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
+        # Delete in order: service_orders → payments → booking_rooms → bookings → guest
+        cursor.execute("""
+            DELETE so FROM Service_Order so
+            JOIN Booking b ON so.BookingID = b.BookingID
+            WHERE b.GuestID = %s
+        """, (guest_id,))
+        cursor.execute("""
+            DELETE p FROM Payment p
+            JOIN Booking b ON p.BookingID = b.BookingID
+            WHERE b.GuestID = %s
+        """, (guest_id,))
+        cursor.execute("""
+            DELETE br FROM Booking_Room br
+            JOIN Booking b ON br.BookingID = b.BookingID
+            WHERE b.GuestID = %s
+        """, (guest_id,))
+        cursor.execute("DELETE FROM Booking WHERE GuestID = %s", (guest_id,))
         cursor.execute("DELETE FROM Guest WHERE GuestID = %s", (guest_id,))
         conn.commit()
         return jsonify({"message": "Guest deleted"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -391,6 +460,7 @@ def delete_guest(guest_id):
 
 @app.route("/rooms", methods=["GET"])
 def get_rooms():
+    conn = cursor = None
     status = request.args.get("status")
     try:
         conn   = get_connection()
@@ -403,10 +473,12 @@ def get_rooms():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/rooms/<int:room_id>", methods=["GET"])
 def get_room(room_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -418,10 +490,12 @@ def get_room(room_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/rooms", methods=["POST"])
 def create_room():
+    conn = cursor = None
     data = request.get_json()
     required = ("RoomID","Room_Type","Floor","Base_Price","Room_Status")
     if not data or not all(k in data for k in required):
@@ -438,10 +512,12 @@ def create_room():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/rooms/<int:room_id>", methods=["PUT"])
 def update_room(room_id):
+    conn = cursor = None
     data = request.get_json()
     required = ("Room_Type","Floor","Base_Price","Room_Status")
     if not data or not all(k in data for k in required):
@@ -458,10 +534,12 @@ def update_room(room_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/rooms/<int:room_id>/status", methods=["PATCH"])
 def update_room_status(room_id):
+    conn = cursor = None
     data = request.get_json()
     if not data or "Room_Status" not in data:
         return jsonify({"error": "Missing required field: Room_Status"}), 400
@@ -474,20 +552,26 @@ def update_room_status(room_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/rooms/<int:room_id>", methods=["DELETE"])
 def delete_room(room_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
+        # Delete child records first
+        cursor.execute("DELETE FROM Maintenance_Request WHERE RoomID = %s", (room_id,))
+        cursor.execute("DELETE FROM Booking_Room WHERE RoomID = %s", (room_id,))
         cursor.execute("DELETE FROM Room WHERE RoomID = %s", (room_id,))
         conn.commit()
         return jsonify({"message": "Room deleted"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -496,6 +580,7 @@ def delete_room(room_id):
 
 @app.route("/bookings", methods=["GET"])
 def get_bookings():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -510,10 +595,12 @@ def get_bookings():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/bookings/<int:booking_id>", methods=["GET"])
 def get_booking(booking_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -532,10 +619,12 @@ def get_booking(booking_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/bookings", methods=["POST"])
 def create_booking():
+    conn = cursor = None
     data = request.get_json()
     required = ("BookingID","Booking_Date","Number_of_Guest","Booking_Status","GuestID")
     if not data or not all(k in data for k in required):
@@ -553,10 +642,12 @@ def create_booking():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/bookings/<int:booking_id>", methods=["PUT"])
 def update_booking(booking_id):
+    conn = cursor = None
     data = request.get_json()
     required = ("Booking_Date","Number_of_Guest","Total_Amount","Booking_Status","GuestID")
     if not data or not all(k in data for k in required):
@@ -574,10 +665,12 @@ def update_booking(booking_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/bookings/<int:booking_id>/status", methods=["PATCH"])
 def update_booking_status(booking_id):
+    conn = cursor = None
     data = request.get_json()
     if not data or "Booking_Status" not in data:
         return jsonify({"error": "Missing required field: Booking_Status"}), 400
@@ -593,20 +686,27 @@ def update_booking_status(booking_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/bookings/<int:booking_id>", methods=["DELETE"])
 def delete_booking(booking_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
+        # Delete child records first
+        cursor.execute("DELETE FROM Service_Order WHERE BookingID = %s", (booking_id,))
+        cursor.execute("DELETE FROM Payment WHERE BookingID = %s", (booking_id,))
+        cursor.execute("DELETE FROM Booking_Room WHERE BookingID = %s", (booking_id,))
         cursor.execute("DELETE FROM Booking WHERE BookingID = %s", (booking_id,))
         conn.commit()
         return jsonify({"message": "Booking deleted"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -615,6 +715,7 @@ def delete_booking(booking_id):
 
 @app.route("/booking-rooms", methods=["GET"])
 def get_booking_rooms():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -628,10 +729,12 @@ def get_booking_rooms():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/booking-rooms/<int:booking_id>", methods=["GET"])
 def get_rooms_by_booking(booking_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -644,10 +747,12 @@ def get_rooms_by_booking(booking_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/booking-rooms", methods=["POST"])
 def assign_room_to_booking():
+    conn = cursor = None
     data = request.get_json()
     required = ("BookingID","RoomID","Check_in_Date","Check_out_Date","Room_Price")
     if not data or not all(k in data for k in required):
@@ -665,10 +770,12 @@ def assign_room_to_booking():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/booking-rooms/<int:booking_id>/<int:room_id>", methods=["PUT"])
 def update_booking_room(booking_id, room_id):
+    conn = cursor = None
     data = request.get_json()
     required = ("Check_in_Date","Check_out_Date","Room_Price")
     if not data or not all(k in data for k in required):
@@ -685,10 +792,12 @@ def update_booking_room(booking_id, room_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/booking-rooms/<int:booking_id>/<int:room_id>", methods=["DELETE"])
 def remove_room_from_booking(booking_id, room_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -700,7 +809,8 @@ def remove_room_from_booking(booking_id, room_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -709,6 +819,7 @@ def remove_room_from_booking(booking_id, room_id):
 
 @app.route("/payments", methods=["GET"])
 def get_payments():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -720,10 +831,12 @@ def get_payments():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/payments/<int:payment_id>", methods=["GET"])
 def get_payment(payment_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -735,10 +848,12 @@ def get_payment(payment_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/payments/booking/<int:booking_id>", methods=["GET"])
 def get_payments_by_booking(booking_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -747,10 +862,12 @@ def get_payments_by_booking(booking_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/payments", methods=["POST"])
 def create_payment():
+    conn = cursor = None
     data = request.get_json()
     required = ("PaymentID","Amount","Payment_Date","Payment_Status","Payment_Method","BookingID")
     if not data or not all(k in data for k in required):
@@ -768,10 +885,12 @@ def create_payment():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/payments/<int:payment_id>/status", methods=["PATCH"])
 def update_payment_status(payment_id):
+    conn = cursor = None
     data = request.get_json()
     if not data or "Payment_Status" not in data:
         return jsonify({"error": "Missing required field: Payment_Status"}), 400
@@ -787,10 +906,12 @@ def update_payment_status(payment_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/payments/<int:payment_id>", methods=["DELETE"])
 def delete_payment(payment_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -800,7 +921,8 @@ def delete_payment(payment_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -809,6 +931,7 @@ def delete_payment(payment_id):
 
 @app.route("/services", methods=["GET"])
 def get_services():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -817,10 +940,12 @@ def get_services():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/services/<int:service_id>", methods=["GET"])
 def get_service(service_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -832,10 +957,12 @@ def get_service(service_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/services", methods=["POST"])
 def create_service():
+    conn = cursor = None
     data = request.get_json()
     required = ("ServiceID","Service_Name","Service_Type","Base_Charge")
     if not data or not all(k in data for k in required):
@@ -853,10 +980,12 @@ def create_service():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/services/<int:service_id>", methods=["PUT"])
 def update_service(service_id):
+    conn = cursor = None
     data = request.get_json()
     required = ("Service_Name","Service_Type","Base_Charge")
     if not data or not all(k in data for k in required):
@@ -874,20 +1003,25 @@ def update_service(service_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/services/<int:service_id>", methods=["DELETE"])
 def delete_service(service_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
+        # Delete service orders first
+        cursor.execute("DELETE FROM Service_Order WHERE ServiceID = %s", (service_id,))
         cursor.execute("DELETE FROM Service WHERE ServiceID = %s", (service_id,))
         conn.commit()
         return jsonify({"message": "Service deleted"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -896,6 +1030,7 @@ def delete_service(service_id):
 
 @app.route("/service-orders", methods=["GET"])
 def get_service_orders():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -907,10 +1042,12 @@ def get_service_orders():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/service-orders/<int:order_id>", methods=["GET"])
 def get_service_order(order_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -926,10 +1063,12 @@ def get_service_order(order_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/service-orders/booking/<int:booking_id>", methods=["GET"])
 def get_orders_by_booking(booking_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -942,10 +1081,12 @@ def get_orders_by_booking(booking_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/service-orders", methods=["POST"])
 def create_service_order():
+    conn = cursor = None
     data = request.get_json()
     required = ("OrderID","Amount","Status","BookingID","ServiceID")
     if not data or not all(k in data for k in required):
@@ -963,10 +1104,12 @@ def create_service_order():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/service-orders/<int:order_id>/status", methods=["PATCH"])
 def update_service_order_status(order_id):
+    conn = cursor = None
     data = request.get_json()
     if not data or "Status" not in data:
         return jsonify({"error": "Missing required field: Status"}), 400
@@ -981,10 +1124,12 @@ def update_service_order_status(order_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/service-orders/<int:order_id>", methods=["DELETE"])
 def delete_service_order(order_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -994,7 +1139,8 @@ def delete_service_order(order_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
@@ -1003,6 +1149,7 @@ def delete_service_order(order_id):
 
 @app.route("/maintenance", methods=["GET"])
 def get_maintenance_requests():
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -1017,10 +1164,12 @@ def get_maintenance_requests():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/maintenance/<int:request_id>", methods=["GET"])
 def get_maintenance_request(request_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -1039,10 +1188,12 @@ def get_maintenance_request(request_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/maintenance/room/<int:room_id>", methods=["GET"])
 def get_maintenance_by_room(room_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -1051,10 +1202,12 @@ def get_maintenance_by_room(room_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/maintenance", methods=["POST"])
 def create_maintenance_request():
+    conn = cursor = None
     data = request.get_json()
     required = ("RequestID","Request_Date","Issue_Description","Priority","Status","RoomID","StaffID")
     if not data or not all(k in data for k in required):
@@ -1072,10 +1225,12 @@ def create_maintenance_request():
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/maintenance/<int:request_id>", methods=["PUT"])
 def update_maintenance_request(request_id):
+    conn = cursor = None
     data = request.get_json()
     required = ("Issue_Description","Priority","Status","RoomID","StaffID")
     if not data or not all(k in data for k in required):
@@ -1094,10 +1249,12 @@ def update_maintenance_request(request_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/maintenance/<int:request_id>/status", methods=["PATCH"])
 def update_maintenance_status(request_id):
+    conn = cursor = None
     data = request.get_json()
     if not data or "Status" not in data:
         return jsonify({"error": "Missing required field: Status"}), 400
@@ -1113,10 +1270,12 @@ def update_maintenance_status(request_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 @app.route("/maintenance/<int:request_id>", methods=["DELETE"])
 def delete_maintenance_request(request_id):
+    conn = cursor = None
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -1126,7 +1285,8 @@ def delete_maintenance_request(request_id):
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close(); conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
 
 # ──────────────────────────────────────────────
